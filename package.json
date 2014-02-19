@@ -16,7 +16,8 @@
     "gulp-uglify": "~0.2.1",
     "gulp-jshint": "~1.4.2",
     "gulp-imagemin": "~0.1.5",
-    "gulp-cache": "~0.1.1"
+    "gulp-cache": "~0.1.1",
+    "gulp-typescript": "~0.1.0"
   },
   "engines": {
     "node": ">=0.8.0"

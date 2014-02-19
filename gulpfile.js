@@ -13,6 +13,7 @@ var gulp = require('gulp'),
 	cache = require('gulp-cache'),
 	livereload = require('gulp-livereload'),
 	lr = require('tiny-lr'),
+	typescript = require('gulp-typescript'),
 	server = lr();
 
 // Styles
@@ -82,4 +83,14 @@ gulp.task('watch', function() {
 
 	});
 
+});
+
+gulp.task('build', function () {
+	gulp.src('src/scripts/**/*.ts')
+		.pipe(typescript({
+			target: 'es5', //or es3
+			sourcemap: true,
+			declaration: true
+		}))
+		.pipe(gulp.dest('dist'));
 });

@@ -30,9 +30,7 @@ module App.Services {
 		useAngularDefResolver();
 		useJQueryDefResolver();
 	}
-	interface ICachePromisePromise extends ng.IPromise, JQueryPromise {
-	}
-	;
+	interface ICachePromisePromise extends ng.IPromise, JQueryPromise {}
 	interface IPromiseCachedObj {
 		time?: number;
 		promise?: ICachePromisePromise<any>;
