@@ -2,17 +2,17 @@
 
 module App.Services {
 	export interface IPromiseCacheObject {
-		get<T>(key: string, timeout?: number): JQueryPromise<T>;
-		get<T>(key: string, timeout?: number): ng.IPromise<T>;
+		get<T>(key:string, timeout?:number): JQueryPromise<T>;
+		get<T>(key:string, timeout?:number): ng.IPromise<T>;
 
-		set<T>(key: string, promise: JQueryPromise<T>, context?: any): JQueryPromise<T>;
-		set<T>(key: string, promise: ng.IPromise<T>, context?: any): ng.IPromise<T>;
+		set<T>(key:string, promise:JQueryPromise<T>, context?:any): JQueryPromise<T>;
+		set<T>(key:string, promise:ng.IPromise<T>, context?:any): ng.IPromise<T>;
 
-		remove(key: string);
+		remove(key:string);
 		removeAll();
 	}
 	export interface IPromiseCacheService {
-		(cacheId: string, optionsMap?: IPromiseCacheOptions): IPromiseCacheObject;
+		(cacheId:string, optionsMap?:IPromiseCacheOptions): IPromiseCacheObject;
 	}
 	export interface IPromiseCacheOptions {
 		capacity?: number; // for angular $cacheFactory
@@ -21,16 +21,18 @@ module App.Services {
 		saveFail?: boolean;
 	}
 	export interface ICachePromiseDefResolver {
-		<T>(...values: any[]):JQueryPromise<T>;
-		<T>(...values: any[]):ng.IPromise<T>;
+		<T>(...values:any[]):JQueryPromise<T>;
+		<T>(...values:any[]):ng.IPromise<T>;
 	}
 	export interface ICachePromiseProvider {
-		setOptions(options: IPromiseCacheOptions): IPromiseCacheOptions;
-		setDefResolver(resolver: ICachePromiseDefResolver);
+		setOptions(options:IPromiseCacheOptions): IPromiseCacheOptions;
+		setDefResolver(resolver:ICachePromiseDefResolver);
 		useAngularDefResolver();
 		useJQueryDefResolver();
 	}
-	interface ICachePromisePromise extends ng.IPromise, JQueryPromise {};
+	interface ICachePromisePromise extends ng.IPromise, JQueryPromise {
+	}
+	;
 	interface IPromiseCachedObj {
 		time?: number;
 		promise?: ICachePromisePromise<any>;
@@ -38,15 +40,15 @@ module App.Services {
 		context?: any;
 	}
 
-	export var CachePromiseProvider = ["$q", function ($q: ng.IQService) {
+	export var CachePromiseProvider = ["$q", function ($q:ng.IQService) {
 		var provider = this,
 			serviceProvider = <ICachePromiseProvider>this,
-			ngDefResolver = function (...values: any[]) {
+			ngDefResolver = function (...values:any[]) {
 				var def = $q.defer();
 				def.resolve.apply(this, arguments);
 				return def.promise;
 			},
-			$DefResolver = function (...values: any[]) {
+			$DefResolver = function (...values:any[]) {
 				var def = $.Deferred();
 				def.resolve.apply(this, arguments);
 				return def.promise();
@@ -58,33 +60,33 @@ module App.Services {
 				defResolver: ngDefResolver
 			};
 
-		this.$get = ['$cacheFactory', function($cacheFactory: ng.ICacheFactoryService) {
-			return <IPromiseCacheService>function (cacheId: string, options?: IPromiseCacheOptions) {
+		this.$get = ['$cacheFactory', function ($cacheFactory:ng.ICacheFactoryService) {
+			return <IPromiseCacheService>function (cacheId:string, options?:IPromiseCacheOptions) {
 				var me = <IPromiseCacheObject>{},
 					opt = angular.extend({}, defOptions, options),
 					cache = $cacheFactory(cacheId, options);
 
-				me.get = function(key: string, timeout?: number) {
+				me.get = function (key:string, timeout?:number) {
 					var cached = cache.get(key),
 						now = (new Date()).getTime();
 					if (cached && cached.promise) {
 						return cached.promise;
 					}
 					if (cached
-						&& (!timeout || (now  - cached.time < timeout))
-						&& (!opt.timeout || (now  - cached.time < opt.timeout))) {
-							opt.defResolver.apply(cached.context || this, cached.data);
+						&& (!timeout || (now - cached.time < timeout))
+						&& (!opt.timeout || (now - cached.time < opt.timeout))) {
+						opt.defResolver.apply(cached.context || this, cached.data);
 					}
 					return null;
 				};
 
-				me.set = function <T>(key: string, promise: JQueryPromise<T>, context?: any) {
+				me.set = function <T>(key:string, promise:JQueryPromise<T>, context?:any) {
 					var cached_obj = <IPromiseCachedObj>{
 						context: context,
 						promise: promise
 					};
 
-					var fnc = ()=>{
+					var fnc = ()=> {
 						cached_obj.data = Array.prototype.slice.call(arguments);
 						cached_obj.time = (new Date()).getTime();
 						delete cached_obj.promise;
@@ -95,7 +97,7 @@ module App.Services {
 					return promise;
 				};
 
-				me.remove = function (key: string) {
+				me.remove = function (key:string) {
 					cache.remove(key);
 				};
 				me.removeAll = function () {
@@ -106,18 +108,18 @@ module App.Services {
 			};
 		}];
 
-		serviceProvider.setOptions = function (options: IPromiseCacheOptions) {
+		serviceProvider.setOptions = function (options:IPromiseCacheOptions) {
 			return defOptions = angular.extend({}, defOptions, options);
 		};
-		serviceProvider.setDefResolver = function(resolver: ICachePromiseDefResolver) {
+		serviceProvider.setDefResolver = function (resolver:ICachePromiseDefResolver) {
 			if (resolver && angular.isFunction(resolver)) {
 				defOptions.defResolver = resolver;
 			}
 		};
-		serviceProvider.useAngularDefResolver = function() {
+		serviceProvider.useAngularDefResolver = function () {
 			defOptions.defResolver = ngDefResolver;
 		};
-		serviceProvider.useJQueryDefResolver = function() {
+		serviceProvider.useJQueryDefResolver = function () {
 			defOptions.defResolver = $DefResolver;
 		};
 	}];
