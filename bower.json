@@ -1,0 +1,11 @@
+{
+	"name": "angular-promise-cache",
+	"version": "0.1.0",
+	"main": "",
+	"ignore": [
+	],
+	"dependencies": {
+	},
+	"devDependencies": {
+	}
+}
