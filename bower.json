@@ -1,10 +1,29 @@
 {
-	"name": "angular-promise-cache",
+	"name": "angular-cache-promise",
 	"version": "0.1.0",
-	"main": "",
+	"main": "./dist/angular-cache-promise.js",
+	"description": "Angular.js directives for nvd3.js.",
+	"authors": [
+		"Stas Yermakov"
+	],
+	"license": "The MIT License (MIT)",
+	"homepage": "",
+	"keywords": [
+		"angular",
+		"service",
+		"promise",
+		"cache",
+		"ajax"
+	],
 	"ignore": [
+		"**/.*",
+		"node_modules",
+		"bower_components",
+		"test",
+		"tests"
 	],
 	"dependencies": {
+		"angular": "~1.2.6"
 	},
 	"devDependencies": {
 	}
