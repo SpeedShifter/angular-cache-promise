@@ -26,5 +26,6 @@
     "angular": "~1.2.6",
     "DefinitelyTyped": "*"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "appPath": "./src"
 }
