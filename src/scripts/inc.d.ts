@@ -1,4 +1,4 @@
 /// <reference path="../bower_components/DefinitelyTyped/jquery/jquery.d.ts" />
 /// <reference path="../bower_components/DefinitelyTyped/angularjs/angular.d.ts" />
 
-/// <reference path="angular-cache-promise.ts" />
+/// <reference path="services/angular-cache-promise.ts" />
