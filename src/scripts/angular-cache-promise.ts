@@ -1,9 +1,8 @@
-/// <reference path="./inc.d.ts" />
+/// <reference path="./../inc.d.ts" />
 
 module App.Services {
 	export interface IPromiseCacheObject {
-		get<T>(key:string, timeout?:number): JQueryPromise<T>;
-		get<T>(key:string, timeout?:number): ng.IPromise<T>;
+		get<T>(key:string, timeout?:number): T;
 
 		set<T>(key:string, promise:JQueryPromise<T>, context?:any): JQueryPromise<T>;
 		set<T>(key:string, promise:ng.IPromise<T>, context?:any): ng.IPromise<T>;
@@ -17,23 +16,21 @@ module App.Services {
 	export interface IPromiseCacheOptions {
 		capacity?: number; // for angular $cacheFactory
 		timeout?: number;
-		defResolver?: ICachePromiseDefResolver;
+		defResolver?: (...values:any[]) => any;
 		saveFail?: boolean;
 	}
 	export interface ICachePromiseDefResolver {
-		<T>(...values:any[]):JQueryPromise<T>;
-		<T>(...values:any[]):ng.IPromise<T>;
+		(...values:any[]): any;
 	}
 	export interface ICachePromiseProvider {
 		setOptions(options:IPromiseCacheOptions): IPromiseCacheOptions;
-		setDefResolver(resolver:ICachePromiseDefResolver);
+		setDefResolver(resolver: <T>(...values:any[]) => T);
 		useAngularDefResolver();
 		useJQueryDefResolver();
 	}
-	interface ICachePromisePromise extends ng.IPromise, JQueryPromise {}
 	interface IPromiseCachedObj {
 		time?: number;
-		promise?: ICachePromisePromise<any>;
+		promise?: any;
 		data?: any; // cached data
 		context?: any;
 	}
@@ -77,8 +74,7 @@ module App.Services {
 					}
 					return null;
 				};
-
-				me.set = function <T>(key:string, promise:JQueryPromise<T>, context?:any) {
+				me.set = function (key:string, promise:any, context?:any) {
 					var cached_obj = <IPromiseCachedObj>{
 						context: context,
 						promise: promise
@@ -105,6 +101,7 @@ module App.Services {
 				return me;
 			};
 		}];
+
 
 		serviceProvider.setOptions = function (options:IPromiseCacheOptions) {
 			return defOptions = angular.extend({}, defOptions, options);
