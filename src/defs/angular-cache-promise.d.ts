@@ -1,5 +1,5 @@
 /// <reference path="../inc.d.ts" />
-declare module App.Services {
+declare module SpeedShifter.Services {
     interface IPromiseCacheObject {
         get<T>(key: string, timeout?: number): T;
         set<T>(key: string, promise: JQueryPromise<T>, context?: any): JQueryPromise<T>;

@@ -1,6 +1,7 @@
 /// <reference path="./../inc.d.ts" />
 
-module App.Services {
+module SpeedShifter.Services {
+	'use strict';
 	export interface IPromiseCacheObject {
 		get<T>(key:string, timeout?:number): T;
 

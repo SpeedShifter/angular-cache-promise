@@ -1,6 +1,8 @@
-var App;
-(function (App) {
+var SpeedShifter;
+(function (SpeedShifter) {
     (function (Services) {
+        'use strict';
+
         Services.CachePromiseProvider = [
             "$q", function ($q) {
                 var provider = this, serviceProvider = this, ngDefResolver = function () {
@@ -84,7 +86,6 @@ var App;
                     defOptions.defResolver = $DefResolver;
                 };
             }];
-    })(App.Services || (App.Services = {}));
-    var Services = App.Services;
-})(App || (App = {}));
-//# sourceMappingURL=angular-cache-promise.js.map
+    })(SpeedShifter.Services || (SpeedShifter.Services = {}));
+    var Services = SpeedShifter.Services;
+})(SpeedShifter || (SpeedShifter = {}));

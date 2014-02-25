@@ -21,8 +21,9 @@ module.exports = function (grunt) {
     // Project settings
     yeoman: {
       // configurable paths
-      app: require('./bower.json').appPath || 'src',
-      dist: 'dist'
+      app: require('./bower.json').appPath || 'app',
+      dist: 'dist',
+	  src: 'src'
     },
 
     // Watches files for changes and runs tasks based on the changed files
@@ -152,16 +153,24 @@ module.exports = function (grunt) {
     },
 
     typescript: {
-	  dist: {
-		  src: ['<%= yeoman.app %>/scripts/**/*.ts'],
-		  dest: 'dist',
+		dist: {
+		  src: ['<%= yeoman.src %>/scripts/**/*.ts'],
+		  dest: '<%= yeoman.dist %>',
 		  options: {
 			  target: 'es5', //or es3
-			  base_path: '<%= yeoman.app %>/scripts',
-			  sourcemap: true,
-			  declaration: true
+			  base_path: '<%= yeoman.src %>/scripts'
 		  }
-	  }
+		},
+	    def: {
+		    src: ['<%= yeoman.src %>/scripts/**/*.ts'],
+		    dest: '<%= yeoman.src %>/defs',
+		    options: {
+			    target: 'es5', //or es3
+			    base_path: '<%= yeoman.src %>/scripts',
+			    sourcemap: true,
+			    declaration: true
+		    }
+	    }
     },
 
 
