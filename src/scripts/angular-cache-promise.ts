@@ -1,4 +1,4 @@
-/// <reference path="./../inc.d.ts" />
+/// <reference path="../inc.d.ts" />
 
 module SpeedShifter.Services {
 	'use strict';
