@@ -120,3 +120,5 @@ module SpeedShifter.Services {
 		};
 	}];
 }
+
+/// angular.module speedshifter.cache-promise

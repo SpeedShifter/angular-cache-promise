@@ -173,28 +173,6 @@ module.exports = function (grunt) {
 	    }
     },
 
-	concat: {
-		dist: {
-			options: {
-				// Replace all 'use strict' statements in the code with a single one at the top
-				banner: "'use strict';\n",
-				process: function(src, filepath) {
-					return '// Source: ' + filepath + '\n' +
-						src.replace(/(^|\n)[ \t]*('use strict'|"use strict");?\s*/g, '$1');
-				}
-			},
-			files: [
-				{
-					expand: true,     // Enable dynamic expansion.
-					cwd: '<%= yeoman.src %>/modules',      // Src matches are relative to this path.
-					src: ['**/*.module.ts'], // Actual pattern(s) to match.
-					dest: 'build/',   // Destination path prefix.
-					ext: '.min.js'   // Dest filepaths will have this extension.
-				}
-			]
-		},
-	},
-
     // Compiles Sass to CSS and generates necessary files if requested
     compass: {
       options: {
@@ -390,8 +368,9 @@ module.exports = function (grunt) {
     // concat: {
     //   dist: {}
     // },
-
-    // Test settings
+	concat: {
+		dist: {}
+	},
     karma: {
       unit: {
         configFile: 'karma.conf.js',
@@ -451,4 +430,33 @@ module.exports = function (grunt) {
     'test',
     'build'
   ]);
+
+	grunt.registerTask("add-defs", "your description", function() {
+		var path = require('path');
+		var concat = grunt.config.get('concat') || {};
+		concat['add-defs'] = {
+			files: {}
+		};
+
+		// read all subdirectories from your modules folder
+		grunt.file.expand("src/modules/*.ts").forEach(function (file) {
+			grunt.log.writeln('File "' + ('src/scripts/'+path.basename(file)).replace(".module.", ".") + '" created.');
+			concat['add-defs'].files["dest/"+path.basename(file)] = [('src/scripts/'+path.basename(file)).replace(".module.", "."), ""+file];
+			/*
+			// get the current concat config
+			var concat = grunt.config.get('concat') || {};
+
+			// set the config for this modulename-directory
+			concat['files'] = {
+				src: ['/modules/' + dir + '/js/*.js', '!/modules/' + dir + '/js/compiled.js'],
+				dest: '/modules/' + dir + '/js/compiled.js'
+			}
+
+			// save the new concat config
+			grunt config.set('concat', concat);  */
+		});
+		grunt.config.set('concat', concat);
+		// when finished run the concatinations
+		grunt.task.run('concat');
+	});
 };
