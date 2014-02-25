@@ -173,6 +173,27 @@ module.exports = function (grunt) {
 	    }
     },
 
+	concat: {
+		dist: {
+			options: {
+				// Replace all 'use strict' statements in the code with a single one at the top
+				banner: "'use strict';\n",
+				process: function(src, filepath) {
+					return '// Source: ' + filepath + '\n' +
+						src.replace(/(^|\n)[ \t]*('use strict'|"use strict");?\s*/g, '$1');
+				}
+			},
+			files: [
+				{
+					expand: true,     // Enable dynamic expansion.
+					cwd: '<%= yeoman.src %>/modules',      // Src matches are relative to this path.
+					src: ['**/*.module.ts'], // Actual pattern(s) to match.
+					dest: 'build/',   // Destination path prefix.
+					ext: '.min.js'   // Dest filepaths will have this extension.
+				}
+			]
+		},
+	},
 
     // Compiles Sass to CSS and generates necessary files if requested
     compass: {

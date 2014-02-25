@@ -1,5 +1,5 @@
 /// <reference path="../inc.d.ts" />
-(function () {
+module SpeedShifter.Services {
 	var module = angular.module('speedshifter.cache-promise', []);
-	module.provider('cache-promise', SpeedShifter.Services.CachePromiseProvider);
-})();
+	module.provider('cache-promise', CachePromiseProvider);
+}
