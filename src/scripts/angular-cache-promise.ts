@@ -2,7 +2,7 @@
 
 module SpeedShifter.Services {
 	'use strict';
-	export interface IPromiseCacheObject {
+	export interface ICachePromiseObject {
 		get<T>(key:string, timeout?:number): T;
 
 		set<T>(key:string, promise:JQueryPromise<T>, context?:any): JQueryPromise<T>;
@@ -11,10 +11,10 @@ module SpeedShifter.Services {
 		remove(key:string);
 		removeAll();
 	}
-	export interface IPromiseCacheService {
-		(cacheId:string, optionsMap?:IPromiseCacheOptions): IPromiseCacheObject;
+	export interface ICachePromiseService {
+		(cacheId:string, optionsMap?:ICachePromiseOptions): ICachePromiseObject;
 	}
-	export interface IPromiseCacheOptions {
+	export interface ICachePromiseOptions {
 		capacity?: number; // for angular $cacheFactory
 		timeout?: number;
 		defResolver?: (...values:any[]) => any;
@@ -24,12 +24,12 @@ module SpeedShifter.Services {
 		(...values:any[]): any;
 	}
 	export interface ICachePromiseProvider {
-		setOptions(options:IPromiseCacheOptions): IPromiseCacheOptions;
+		setOptions(options:ICachePromiseOptions): ICachePromiseOptions;
 		setDefResolver(resolver: <T>(...values:any[]) => T);
 		useAngularDefResolver();
 		useJQueryDefResolver();
 	}
-	interface IPromiseCachedObj {
+	interface ICachePromisedObj {
 		time?: number;
 		promise?: any;
 		data?: any; // cached data
@@ -49,7 +49,7 @@ module SpeedShifter.Services {
 				def.resolve.apply(this, arguments);
 				return def.promise();
 			},
-			defOptions = <IPromiseCacheOptions>{
+			defOptions = <ICachePromiseOptions>{
 				capacity: null,
 				timeout: null,
 				saveFail: false,
@@ -57,8 +57,8 @@ module SpeedShifter.Services {
 			};
 
 		this.$get = ['$cacheFactory', function ($cacheFactory:ng.ICacheFactoryService) {
-			return <IPromiseCacheService>function (cacheId:string, options?:IPromiseCacheOptions) {
-				var me = <IPromiseCacheObject>{},
+			return <ICachePromiseService>function (cacheId:string, options?:ICachePromiseOptions) {
+				var me = <ICachePromiseObject>{},
 					opt = angular.extend({}, defOptions, options),
 					cache = $cacheFactory(cacheId, options);
 
@@ -76,7 +76,7 @@ module SpeedShifter.Services {
 					return null;
 				};
 				me.set = function (key:string, promise:any, context?:any) {
-					var cached_obj = <IPromiseCachedObj>{
+					var cached_obj = <ICachePromisedObj>{
 						context: context,
 						promise: promise
 					};
@@ -104,7 +104,7 @@ module SpeedShifter.Services {
 		}];
 
 
-		serviceProvider.setOptions = function (options:IPromiseCacheOptions) {
+		serviceProvider.setOptions = function (options:ICachePromiseOptions) {
 			return defOptions = angular.extend({}, defOptions, options);
 		};
 		serviceProvider.setDefResolver = function (resolver:ICachePromiseDefResolver) {
