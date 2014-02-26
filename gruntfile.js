@@ -126,7 +126,8 @@ module.exports = function (grunt) {
           ]
         }]
       },
-      server: '.tmp'
+      server: '.tmp',
+	  tmp: '.tmp'
     },
 
     // Add vendor prefixed styles
@@ -170,7 +171,17 @@ module.exports = function (grunt) {
 			    sourcemap: true,
 			    declaration: true
 		    }
-	    }
+	    },
+		modules: {
+			src: ['<%= yeoman.src %>/modules/**/*.ts', '<%= yeoman.src %>/scripts/**/*.ts'],
+			dest: '.tmp',
+			options: {
+				target: 'es5', //or es3
+				base_path: '<%= yeoman.src %>',
+				sourcemap: false,
+				declaration: false
+			}
+		}
     },
 
     // Compiles Sass to CSS and generates necessary files if requested
@@ -322,7 +333,27 @@ module.exports = function (grunt) {
         cwd: '<%= yeoman.app %>/styles',
         dest: '.tmp/styles/',
         src: '{,*/}*.css'
-      }
+      },
+		modules: {
+			expand: true,
+			cwd: '.tmp',
+			src: ['**/*.js'],
+			dest: '.tmp/js',
+			rename: function(dest, src) {
+				var path = require('path');
+				return dest + '/' + path.basename(src);
+			}
+		},
+	  min: {
+		  expand: true,
+		  cwd: '.tmp',
+		  src: ['**/*.js', '!**/*.min.js'],
+		  dest: '<%= yeoman.dist %>',
+		  rename: function(dest, src) {
+			  var path = require('path');
+			  return dest + '/' + path.basename(src).replace(".js", ".min.js");
+		  }
+	  }
     },
 
     // Run some tasks in parallel to speed up the build process
@@ -356,15 +387,16 @@ module.exports = function (grunt) {
     //     }
     //   }
     // },
-    // uglify: {
-    //   dist: {
-    //     files: {
-    //       '<%= yeoman.dist %>/scripts/scripts.js': [
-    //         '<%= yeoman.dist %>/scripts/scripts.js'
-    //       ]
-    //     }
-    //   }
-    // },
+    uglify: {
+       dist: {
+		   files: [{
+			   expand: true,
+			   cwd: '<%= yeoman.dist %>',
+			   src: '**/*.js',
+			   dest: '.tmp'
+		   }]
+       }
+    },
     // concat: {
     //   dist: {}
     // },
@@ -432,31 +464,33 @@ module.exports = function (grunt) {
   ]);
 
 	grunt.registerTask("add-defs", "your description", function() {
-		var path = require('path');
-		var concat = grunt.config.get('concat') || {};
+		var path = require('path'),
+			concat = grunt.config.get('concat') || {},
+			src = ".tmp/js",
+			dest = "dist";
+
 		concat['add-defs'] = {
 			files: {}
 		};
 
 		// read all subdirectories from your modules folder
-		grunt.file.expand("src/modules/*.ts").forEach(function (file) {
-			grunt.log.writeln('File "' + ('src/scripts/'+path.basename(file)).replace(".module.", ".") + '" created.');
-			concat['add-defs'].files["dest/"+path.basename(file)] = [('src/scripts/'+path.basename(file)).replace(".module.", "."), ""+file];
-			/*
-			// get the current concat config
-			var concat = grunt.config.get('concat') || {};
-
-			// set the config for this modulename-directory
-			concat['files'] = {
-				src: ['/modules/' + dir + '/js/*.js', '!/modules/' + dir + '/js/compiled.js'],
-				dest: '/modules/' + dir + '/js/compiled.js'
-			}
-
-			// save the new concat config
-			grunt config.set('concat', concat);  */
+		grunt.file.expand(src+"/*.js").forEach(function (file) {
+			var name = file.replace(".module.", ".");
+			concat['add-defs'].files[dest+"/"+path.basename(name)] = [name, ""+file];
 		});
 		grunt.config.set('concat', concat);
 		// when finished run the concatinations
 		grunt.task.run('concat');
 	});
+
+	grunt.registerTask('build-ts', [
+		'clean:tmp',
+		'typescript:modules',
+		'copy:modules',
+		'add-defs',
+		'clean:tmp',
+		'uglify:dist',
+		'copy:min',
+		'clean:tmp'
+	]);
 };

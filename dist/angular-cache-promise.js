@@ -89,3 +89,12 @@ var SpeedShifter;
     })(SpeedShifter.Services || (SpeedShifter.Services = {}));
     var Services = SpeedShifter.Services;
 })(SpeedShifter || (SpeedShifter = {}));
+
+var SpeedShifter;
+(function (SpeedShifter) {
+    (function (Services) {
+        var module = angular.module('speedshifter.cache-promise', []);
+        module.provider('cache-promise', SpeedShifter.Services.CachePromiseProvider);
+    })(SpeedShifter.Services || (SpeedShifter.Services = {}));
+    var Services = SpeedShifter.Services;
+})(SpeedShifter || (SpeedShifter = {}));
