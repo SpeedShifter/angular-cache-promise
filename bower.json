@@ -1,21 +1,22 @@
 {
   "name": "angular-cache-promise",
   "version": "0.1.0",
+  "main": "dist/angular-cache-promise.js",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "tasks",
+    "component.json",
+    "composer.json",
+    "gruntfile.js",
+    "karma.conf.js",
+    "karma-e2e.conf.js",
+    "package.json"
+  ],
   "dependencies": {
 	"DefinitelyTyped": "*"
-  },
-	"ignore": [
-		"**/.*",
-		"node_modules",
-		"bower_components",
-		"test",
-		"tests",
-		"tasks",
-		"component.json",
-		"composer.json",
-		"gruntfile.js",
-		"karma.conf.js",
-		"karma-e2e.conf.js",
-		"package.json"
-	]
+  }
 }
