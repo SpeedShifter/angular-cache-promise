@@ -3,35 +3,44 @@ var SpeedShifter;
     (function (Services) {
         'use strict';
 
-        Services.CachePromiseProvider = [
-            "$q", function ($q) {
-                var serviceProvider = this, ngDefResolver = function () {
-                    var values = [];
-                    for (var _i = 0; _i < (arguments.length - 0); _i++) {
-                        values[_i] = arguments[_i + 0];
-                    }
-                    var def = $q.defer();
-                    def.resolve.apply(this, arguments);
-                    return def.promise;
-                }, $DefResolver = function () {
-                    var values = [];
-                    for (var _i = 0; _i < (arguments.length - 0); _i++) {
-                        values[_i] = arguments[_i + 0];
-                    }
-                    var def = $.Deferred();
-                    def.resolve.apply(this, arguments);
-                    return def.promise();
-                }, defOptions = {
+        Services.CachePromiseProvider = [function () {
+                var serviceProvider = this, defOptions = {
                     capacity: null,
                     timeout: null,
                     saveFail: false,
-                    defResolver: ngDefResolver
+                    defResolver: null,
+                    JQPromise: false
                 };
 
                 this.$get = [
-                    '$cacheFactory', function ($cacheFactory) {
+                    '$q', '$cacheFactory', function ($q, $cacheFactory) {
+                        var ngDefResolver = function () {
+                            var values = [];
+                            for (var _i = 0; _i < (arguments.length - 0); _i++) {
+                                values[_i] = arguments[_i + 0];
+                            }
+                            var def = $q.defer();
+                            def.resolve.apply(this, values);
+                            return def.promise;
+                        }, $DefResolver = function () {
+                            var values = [];
+                            for (var _i = 0; _i < (arguments.length - 0); _i++) {
+                                values[_i] = arguments[_i + 0];
+                            }
+                            var def = $.Deferred();
+                            def.resolve.apply(this, values);
+                            return def.promise();
+                        };
+
                         return function (cacheId, options) {
                             var me = {}, opt = angular.extend({}, defOptions, options), cache = $cacheFactory(cacheId, options);
+
+                            if (!opt.defResolver || !angular.isFunction(opt.defResolver)) {
+                                if (opt.JQPromise)
+                                    opt.defResolver = $DefResolver;
+                                else
+                                    opt.defResolver = ngDefResolver;
+                            }
 
                             me.get = function (key, timeout) {
                                 var cached = cache.get(key), now = (new Date()).getTime();
@@ -39,7 +48,7 @@ var SpeedShifter;
                                     return cached.promise;
                                 }
                                 if (cached && (!timeout || (now - cached.time < timeout)) && (!opt.timeout || (now - cached.time < opt.timeout))) {
-                                    opt.defResolver.apply(cached.context || this, cached.data);
+                                    return opt.defResolver.apply(cached.context || this, cached.data);
                                 }
                                 return null;
                             };
@@ -73,17 +82,6 @@ var SpeedShifter;
 
                 serviceProvider.setOptions = function (options) {
                     return defOptions = angular.extend({}, defOptions, options);
-                };
-                serviceProvider.setDefResolver = function (resolver) {
-                    if (resolver && angular.isFunction(resolver)) {
-                        defOptions.defResolver = resolver;
-                    }
-                };
-                serviceProvider.useAngularDefResolver = function () {
-                    defOptions.defResolver = ngDefResolver;
-                };
-                serviceProvider.useJQueryDefResolver = function () {
-                    defOptions.defResolver = $DefResolver;
                 };
             }];
     })(SpeedShifter.Services || (SpeedShifter.Services = {}));

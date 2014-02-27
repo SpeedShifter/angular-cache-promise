@@ -14,6 +14,7 @@ declare module SpeedShifter.Services {
         capacity?: number;
         timeout?: number;
         defResolver?: ICachePromiseDefResolver<any>;
+        JQPromise?: boolean;
         saveFail?: boolean;
     }
     interface ICachePromiseDefResolver<T> {
@@ -21,9 +22,8 @@ declare module SpeedShifter.Services {
     }
     interface ICachePromiseProvider {
         setOptions(options: ICachePromiseOptions): ICachePromiseOptions;
-        setDefResolver<T>(resolver: ICachePromiseDefResolver<T>): any;
-        useAngularDefResolver(): any;
-        useJQueryDefResolver(): any;
     }
-    var CachePromiseProvider: {}[];
+    var CachePromiseProvider: {
+        (): void;
+    }[];
 }

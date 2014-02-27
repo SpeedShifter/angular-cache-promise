@@ -18,6 +18,7 @@ module SpeedShifter.Services {
 		capacity?: number; // for angular $cacheFactory
 		timeout?: number;
 		defResolver?: ICachePromiseDefResolver<any>;
+		JQPromise?: boolean;
 		saveFail?: boolean;
 	}
 	export interface ICachePromiseDefResolver<T> {
@@ -25,9 +26,6 @@ module SpeedShifter.Services {
 	}
 	export interface ICachePromiseProvider {
 		setOptions(options:ICachePromiseOptions): ICachePromiseOptions;
-		setDefResolver<T>(resolver: ICachePromiseDefResolver<T>);
-		useAngularDefResolver();
-		useJQueryDefResolver();
 	}
 	interface ICachePromisedObj {
 		time?: number;
@@ -36,30 +34,37 @@ module SpeedShifter.Services {
 		context?: any;
 	}
 
-	export var CachePromiseProvider = ["$q", function ($q:ng.IQService) {
+	export var CachePromiseProvider = [function () {
 		var serviceProvider = <ICachePromiseProvider>this,
-			ngDefResolver = function (...values:any[]) {
-				var def = $q.defer();
-				def.resolve.apply(this, arguments);
-				return def.promise;
-			},
-			$DefResolver = function (...values:any[]) {
-				var def = $.Deferred();
-				def.resolve.apply(this, arguments);
-				return def.promise();
-			},
 			defOptions = <ICachePromiseOptions>{
 				capacity: null,
 				timeout: null,
 				saveFail: false,
-				defResolver: ngDefResolver
+				defResolver: null,
+				JQPromise: false
 			};
 
-		this.$get = ['$cacheFactory', function ($cacheFactory:ng.ICacheFactoryService) {
+		this.$get = ['$q', '$cacheFactory', function ($q:ng.IQService, $cacheFactory:ng.ICacheFactoryService) {
+			var ngDefResolver = <ICachePromiseDefResolver<ng.IPromise<any>>> function (...values:any[]) {
+					var def = $q.defer();
+					def.resolve.apply(this, values);
+					return def.promise;
+				},
+				$DefResolver = <ICachePromiseDefResolver<JQueryPromise<any>>> function (...values:any[]) {
+					var def = $.Deferred();
+					def.resolve.apply(this, values);
+					return def.promise();
+				};
+
 			return <ICachePromiseService>function (cacheId:string, options?:ICachePromiseOptions) {
 				var me = <ICachePromiseObject>{},
-					opt = angular.extend({}, defOptions, options),
+					opt = <ICachePromiseOptions>angular.extend({}, defOptions, options),
 					cache = $cacheFactory(cacheId, options);
+
+				if (!opt.defResolver || !angular.isFunction(opt.defResolver)) {
+					if (opt.JQPromise) opt.defResolver = <ICachePromiseDefResolver<any>>$DefResolver;
+					else  opt.defResolver = <ICachePromiseDefResolver<any>>ngDefResolver;
+				}
 
 				me.get = function (key:string, timeout?:number) {
 					var cached = cache.get(key),
@@ -70,7 +75,7 @@ module SpeedShifter.Services {
 					if (cached
 						&& (!timeout || (now - cached.time < timeout))
 						&& (!opt.timeout || (now - cached.time < opt.timeout))) {
-						opt.defResolver.apply(cached.context || this, cached.data);
+						return opt.defResolver.apply(cached.context || this, cached.data);
 					}
 					return null;
 				};
@@ -105,17 +110,6 @@ module SpeedShifter.Services {
 
 		serviceProvider.setOptions = function (options:ICachePromiseOptions) {
 			return defOptions = angular.extend({}, defOptions, options);
-		};
-		serviceProvider.setDefResolver = function (resolver: ICachePromiseDefResolver<any>) {
-			if (resolver && angular.isFunction(resolver)) {
-				defOptions.defResolver = resolver;
-			}
-		};
-		serviceProvider.useAngularDefResolver = function () {
-			defOptions.defResolver = ngDefResolver;
-		};
-		serviceProvider.useJQueryDefResolver = function () {
-			defOptions.defResolver = $DefResolver;
 		};
 	}];
 }
