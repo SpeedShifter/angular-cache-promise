@@ -3,13 +3,13 @@
 module SpeedShifter.Services {
 	'use strict';
 	export interface ICachePromiseObject {
-		get<T>(key:string, timeout?:number): T;
+		get<T>(key: string, timeout?: number): T;
 
-		set<T>(key:string, promise:JQueryPromise<T>, context?:any): JQueryPromise<T>;
-		set<T>(key:string, promise:ng.IPromise<T>, context?:any): ng.IPromise<T>;
+		set(key: string, promise: JQueryPromise<any>, context?: any): JQueryPromise<any>;
+		set(key: string, promise: ng.IPromise<any>, context?: any): ng.IPromise<any>;
 
-		remove(key:string);
-		removeAll();
+		remove(key: string): any;
+		removeAll(): any;
 	}
 	export interface ICachePromiseService {
 		(cacheId:string, optionsMap?:ICachePromiseOptions): ICachePromiseObject;
@@ -17,15 +17,15 @@ module SpeedShifter.Services {
 	export interface ICachePromiseOptions {
 		capacity?: number; // for angular $cacheFactory
 		timeout?: number;
-		defResolver?: (...values:any[]) => any;
+		defResolver?: ICachePromiseDefResolver<any>;
 		saveFail?: boolean;
 	}
-	export interface ICachePromiseDefResolver {
-		(...values:any[]): any;
+	export interface ICachePromiseDefResolver<T> {
+		(...values:any[]): T;
 	}
 	export interface ICachePromiseProvider {
 		setOptions(options:ICachePromiseOptions): ICachePromiseOptions;
-		setDefResolver(resolver: <T>(...values:any[]) => T);
+		setDefResolver<T>(resolver: ICachePromiseDefResolver<T>);
 		useAngularDefResolver();
 		useJQueryDefResolver();
 	}
@@ -37,8 +37,7 @@ module SpeedShifter.Services {
 	}
 
 	export var CachePromiseProvider = ["$q", function ($q:ng.IQService) {
-		var provider = this,
-			serviceProvider = <ICachePromiseProvider>this,
+		var serviceProvider = <ICachePromiseProvider>this,
 			ngDefResolver = function (...values:any[]) {
 				var def = $q.defer();
 				def.resolve.apply(this, arguments);
@@ -107,7 +106,7 @@ module SpeedShifter.Services {
 		serviceProvider.setOptions = function (options:ICachePromiseOptions) {
 			return defOptions = angular.extend({}, defOptions, options);
 		};
-		serviceProvider.setDefResolver = function (resolver:ICachePromiseDefResolver) {
+		serviceProvider.setDefResolver = function (resolver: ICachePromiseDefResolver<any>) {
 			if (resolver && angular.isFunction(resolver)) {
 				defOptions.defResolver = resolver;
 			}

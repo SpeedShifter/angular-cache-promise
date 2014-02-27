@@ -5,7 +5,7 @@ var SpeedShifter;
 
         Services.CachePromiseProvider = [
             "$q", function ($q) {
-                var provider = this, serviceProvider = this, ngDefResolver = function () {
+                var serviceProvider = this, ngDefResolver = function () {
                     var values = [];
                     for (var _i = 0; _i < (arguments.length - 0); _i++) {
                         values[_i] = arguments[_i + 0];

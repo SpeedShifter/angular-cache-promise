@@ -162,18 +162,19 @@ module.exports = function (grunt) {
 			  base_path: '<%= yeoman.src %>/scripts'
 		  }
 		},
-	    def: {
+	    defs: {
 		    src: ['<%= yeoman.src %>/scripts/**/*.ts'],
-		    dest: '<%= yeoman.src %>/defs',
+		    dest: '.tmp',
 		    options: {
 			    target: 'es5', //or es3
 			    base_path: '<%= yeoman.src %>/scripts',
 			    sourcemap: true,
-			    declaration: true
+			    declaration: true,
+				comments: false
 		    }
 	    },
 		modules: {
-			src: ['<%= yeoman.src %>/modules/**/*.ts', '<%= yeoman.src %>/scripts/**/*.ts'],
+			src: ['<%= yeoman.src %>/**/*.ts', '!<%= yeoman.src %>/bower_components/**/*.*'],
 			dest: '.tmp',
 			options: {
 				target: 'es5', //or es3
@@ -353,7 +354,13 @@ module.exports = function (grunt) {
 			  var path = require('path');
 			  return dest + '/' + path.basename(src).replace(".js", ".min.js");
 		  }
-	  }
+	  },
+		defs: {
+			expand: true,
+			cwd: '.tmp',
+			src: ['**/*.d.ts'],
+			dest: '<%= yeoman.dist %>'
+		}
     },
 
     // Run some tasks in parallel to speed up the build process
@@ -408,7 +415,17 @@ module.exports = function (grunt) {
         configFile: 'karma.conf.js',
         singleRun: true
       }
-    }
+    },
+	  replace: {
+		  defs: {
+			  src: ['.tmp/**/*.d.ts'],
+			  overwrite: true,                 // overwrite matched source files
+			  replacements: [{
+				  from: /^\/\/\/.*/g,
+				  to: ""
+			  }]
+		  }
+	  }
   });
 
 
@@ -441,20 +458,9 @@ module.exports = function (grunt) {
   ]);
 
   grunt.registerTask('build', [
-    'clean:dist',
-//    'bower-install',
-//    'useminPrepare',
-    'concurrent:dist',
-    'autoprefixer',
-//    'concat',
-//    'ngmin',
-//    'copy:dist',
-//    'cdnify',
-//    'cssmin',
-//    'uglify',
-//    'rev',
-//    'usemin',
-//    'htmlmin'
+	'clean:dist',
+	'build-ts',
+	'build-defs'
   ]);
 
   grunt.registerTask('default', [
@@ -491,6 +497,14 @@ module.exports = function (grunt) {
 		'clean:tmp',
 		'uglify:dist',
 		'copy:min',
+		'clean:tmp'
+	]);
+
+	grunt.registerTask('build-defs', [
+		'clean:tmp',
+		'typescript:defs',
+		'replace:defs',
+		'copy:defs',
 		'clean:tmp'
 	]);
 };

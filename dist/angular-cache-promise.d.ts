@@ -1,9 +1,9 @@
-/// <reference path="../inc.d.ts" />
+
 declare module SpeedShifter.Services {
     interface ICachePromiseObject {
         get<T>(key: string, timeout?: number): T;
-        set<T>(key: string, promise: JQueryPromise<T>, context?: any): JQueryPromise<T>;
-        set<T>(key: string, promise: ng.IPromise<T>, context?: any): ng.IPromise<T>;
+        set(key: string, promise: JQueryPromise<any>, context?: any): JQueryPromise<any>;
+        set(key: string, promise: ng.IPromise<any>, context?: any): ng.IPromise<any>;
         remove(key: string): any;
         removeAll(): any;
     }
@@ -13,15 +13,15 @@ declare module SpeedShifter.Services {
     interface ICachePromiseOptions {
         capacity?: number;
         timeout?: number;
-        defResolver?: (...values: any[]) => any;
+        defResolver?: ICachePromiseDefResolver<any>;
         saveFail?: boolean;
     }
-    interface ICachePromiseDefResolver {
-        (...values: any[]): any;
+    interface ICachePromiseDefResolver<T> {
+        (...values: any[]): T;
     }
     interface ICachePromiseProvider {
         setOptions(options: ICachePromiseOptions): ICachePromiseOptions;
-        setDefResolver(resolver: <T>(...values: any[]) => T): any;
+        setDefResolver<T>(resolver: ICachePromiseDefResolver<T>): any;
         useAngularDefResolver(): any;
         useJQueryDefResolver(): any;
     }
