@@ -91,7 +91,7 @@ var SpeedShifter;
 var SpeedShifter;
 (function (SpeedShifter) {
     (function (Services) {
-        var module = angular.module('speedshifter.cachePromise') || angular.module('speedshifter.cachePromise', []);
+        var module = angular.module('speedshifter.cachePromise', []);
         module.provider('cachePromise', SpeedShifter.Services.CachePromiseProvider);
     })(SpeedShifter.Services || (SpeedShifter.Services = {}));
     var Services = SpeedShifter.Services;

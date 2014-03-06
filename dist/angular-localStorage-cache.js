@@ -193,7 +193,7 @@ var SpeedShifter;
 var SpeedShifter;
 (function (SpeedShifter) {
     (function (Services) {
-        var module = angular.module('speedshifter.localStoragePromise') || angular.module('speedshifter.localStoragePromise', []);
+        var module = angular.module('speedshifter.localStoragePromise', []);
         module.provider('localStoragePromise', SpeedShifter.Services.LocalStorageProvider);
     })(SpeedShifter.Services || (SpeedShifter.Services = {}));
     var Services = SpeedShifter.Services;
