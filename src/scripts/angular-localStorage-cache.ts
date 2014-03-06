@@ -33,7 +33,7 @@ module SpeedShifter.Services {
 		this.config = <{[index: string]: ILocalStorageConfig}>{};
 		var provider = this,
 			serviceProvider = <ILocalStorageProvider>this,
-			storage1 = {
+			storage = {
 				get: function (key) {
 					if (!_localStorage_supported) return null;
 
