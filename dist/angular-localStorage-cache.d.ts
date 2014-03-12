@@ -1,22 +1,31 @@
 
 declare module SpeedShifter.Services {
-    interface ILocalStorageConfig {
-        valueName: string;
+    interface ILocalStorageOptions {
         expires?: number;
-        limit?: number;
-        json?: boolean;
-        user_dependent?: boolean;
-        multiple?: boolean;
+        dependent?: string[];
+        critical?: boolean;
+        cleanTimeout?: number;
+    }
+    interface ILocalStorageDepend {
+        name: string;
+        value: any;
+        comparator: (item1: any, item2: any) => boolean;
     }
     interface ILocalStorageProvider {
         setAppName(name: string): any;
-        addStoreConfig(config: ILocalStorageConfig): any;
+        setDefOptions(options: ILocalStorageOptions): any;
     }
     interface ILocalStorageService {
-        get(valName: string, propertyName?: string): any;
-        set(valName: string, propertyName: string, val: any, updated?: number): any;
-        remove(valName: string, propertyName?: string, limit?: number): any;
-        setUserId(id: any): any;
+        (cacheId: string, options?: ILocalStorageOptions): ILocalStorageObject;
     }
-    var LocalStorageProvider: {}[];
+    interface ILocalStorageObject {
+        get(valName: string): any;
+        set(valName: string, val: any, updated?: number): any;
+        remove(valName: string, limit?: number): any;
+        clear(): any;
+        clearStorage(): any;
+        setDependence(dep: ILocalStorageDepend, global?: boolean): any;
+        setDependenceVal(name: string, val: any, global?: boolean): any;
+    }
+    var LocalStorageProvider: () => void;
 }
