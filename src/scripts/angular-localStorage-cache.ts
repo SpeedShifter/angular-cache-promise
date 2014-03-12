@@ -33,6 +33,12 @@ module SpeedShifter.Services {
 		setDependenceVal(name: string, val: any, global?: boolean);
 	}
 
+	export interface ILocalStorageItemWrapper {
+		time?: number;
+		data?: any; // cached data
+		depends?: {[name: string]: any};
+	}
+
 	interface ILocalStoragePrivateObject {
 		isBelongs(key: string): boolean;
 		isInvalid(key: string, now?: number): boolean;
@@ -54,33 +60,27 @@ module SpeedShifter.Services {
 		clearInterval: ng.IPromise<any>;
 	}
 
-	interface ILocalStorageObj {
-		time?: number;
-		data?: any; // cached data
-		depends?: {[name: string]: any};
-	}
-
-	var localStorage_helpers = {
-		compare: function (dep: ILocalStorageDepend, val) {
+	export class LocalStorageHelpers {
+		static compare(dep: ILocalStorageDepend, val) {
 			return dep
 				&& ((dep.comparator && dep.comparator(dep.value, val))
 				|| (dep.value === val));
-		},
-		getDepend: function (name: string, depStorages: {[nm:string]: ILocalStorageDepend}[]) {
+		}
+		static getDepend (name: string, depStorages: {[nm:string]: ILocalStorageDepend}[]) {
 			for (var i=0; i<depStorages.length; i++) {
 				if (depStorages[i][name]) {
 					return depStorages[i][name];
 				}
 			}
 			return null;
-		},
-		isDependentFailed: function (vals: {[name: string]: any}, deps: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
+		}
+		static isDependentFailed (vals: {[name: string]: any}, deps: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
 			var i, name,
 				dep = angular.copy(deps),
 				depend;
 			for (name in vals) {
-				depend = localStorage_helpers.getDepend(name, <{[name:string]: ILocalStorageDepend}[]>depStorages);
-				if (depend && !localStorage_helpers.compare(depend, vals[name])) {
+				depend = LocalStorageHelpers.getDepend(name, <{[name:string]: ILocalStorageDepend}[]>depStorages);
+				if (depend && !LocalStorageHelpers.compare(depend, vals[name])) {
 					return true;
 				}
 				if (dep && dep.length > 0) {
@@ -94,36 +94,36 @@ module SpeedShifter.Services {
 
 			if (dep && dep.length > 0) {
 				for (i=0; i<dep.length; i++) {
-					depend = localStorage_helpers.getDepend(dep[i], <{[name:string]: ILocalStorageDepend}[]>depStorages);
-					if (depend && !localStorage_helpers.compare(depend, vals[dep[i]])) {
+					depend = LocalStorageHelpers.getDepend(dep[i], <{[name:string]: ILocalStorageDepend}[]>depStorages);
+					if (depend && !LocalStorageHelpers.compare(depend, vals[dep[i]])) {
 						return true;
 					}
 				}
 			}
 			return false;
-		},
-		isItemOutdated: function (item: ILocalStorageObj, options: ILocalStorageOptions, now: number = (new Date()).getTime()) {
+		}
+		static isItemOutdated (item: ILocalStorageItemWrapper, options: ILocalStorageOptions, now: number = (new Date()).getTime()) {
 			if (!item || !options
 				|| (options.expires && !(item.time && item.time + options.expires > now))) {
 				return true;
 			}
 			return false;
-		},
-		isItemInvalid: function (item: ILocalStorageObj, options: ILocalStorageOptions, depStorages: {[name:string]: ILocalStorageDepend}[], now: number = (new Date()).getTime()) {
+		}
+		static isItemInvalid (item: ILocalStorageItemWrapper, options: ILocalStorageOptions, depStorages: {[name:string]: ILocalStorageDepend}[], now: number = (new Date()).getTime()) {
 			if (!item || !options || !depStorages
-				|| localStorage_helpers.isItemOutdated(item, options, now)
-				|| (options.dependent && localStorage_helpers.isDependentFailed(item.depends, options.dependent, depStorages))) {
+				|| LocalStorageHelpers.isItemOutdated(item, options, now)
+				|| (options.dependent && LocalStorageHelpers.isDependentFailed(item.depends, options.dependent, depStorages))) {
 				return true;
 			}
 			return false;
-		},
-		composeDeps: function (dep: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
+		}
+		static composeDeps (dep: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
 			if (dep && dep.length > 0) {
 				var deps = {},
 					i, depend,
 					c = 0;
 				for (i=0; i<dep.length; i++) {
-					depend = localStorage_helpers.getDepend(dep[i], depStorages);
+					depend = LocalStorageHelpers.getDepend(dep[i], depStorages);
 					if (depend) {
 						deps[dep[i]] = depend.value;
 						c++;
@@ -134,7 +134,7 @@ module SpeedShifter.Services {
 			}
 			return undefined;
 		}
-	};
+	}
 
 	export var LocalStorageProvider = function () {
 		var provider = <any>this,
@@ -299,9 +299,9 @@ module SpeedShifter.Services {
 
 				me.get = function (valName:string) {
 					var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName,
-						item = <ILocalStorageObj>storage.get(propertyName);
+						item = <ILocalStorageItemWrapper>storage.get(propertyName);
 					if (item) {
-						if (localStorage_helpers.isItemInvalid(storage.get(propertyName), options, allDep)) {
+						if (LocalStorageHelpers.isItemInvalid(storage.get(propertyName), options, allDep)) {
 							storage.remove(propertyName);
 							return null;
 						}
@@ -315,10 +315,10 @@ module SpeedShifter.Services {
 
 				me.set = function (valName:string, val:any) {
 					var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName,
-						item = <ILocalStorageObj>{
+						item = <ILocalStorageItemWrapper>{
 							data: val,
 							time: (new Date()).getTime(),
-							depends: localStorage_helpers.composeDeps(options.dependent, allDep)
+							depends: LocalStorageHelpers.composeDeps(options.dependent, allDep)
 						};
 					try {
 						storage.set(propertyName, item);
@@ -402,7 +402,7 @@ module SpeedShifter.Services {
 				};
 				private_me.isInvalid = function(key: string, now: number = (new Date()).getTime()) {
 					if (private_me.isBelongs(key)) {
-						return localStorage_helpers.isItemInvalid(storage.get(key), options, allDep, now);
+						return LocalStorageHelpers.isItemInvalid(storage.get(key), options, allDep, now);
 					}
 					return false;
 				};

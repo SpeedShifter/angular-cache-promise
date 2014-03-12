@@ -1,23 +1,25 @@
 var SpeedShifter;
 (function (SpeedShifter) {
     (function (Services) {
-        var localStorage_helpers = {
-            compare: function (dep, val) {
+        var LocalStorageHelpers = (function () {
+            function LocalStorageHelpers() {
+            }
+            LocalStorageHelpers.compare = function (dep, val) {
                 return dep && ((dep.comparator && dep.comparator(dep.value, val)) || (dep.value === val));
-            },
-            getDepend: function (name, depStorages) {
+            };
+            LocalStorageHelpers.getDepend = function (name, depStorages) {
                 for (var i = 0; i < depStorages.length; i++) {
                     if (depStorages[i][name]) {
                         return depStorages[i][name];
                     }
                 }
                 return null;
-            },
-            isDependentFailed: function (vals, deps, depStorages) {
+            };
+            LocalStorageHelpers.isDependentFailed = function (vals, deps, depStorages) {
                 var i, name, dep = angular.copy(deps), depend;
                 for (name in vals) {
-                    depend = localStorage_helpers.getDepend(name, depStorages);
-                    if (depend && !localStorage_helpers.compare(depend, vals[name])) {
+                    depend = LocalStorageHelpers.getDepend(name, depStorages);
+                    if (depend && !LocalStorageHelpers.compare(depend, vals[name])) {
                         return true;
                     }
                     if (dep && dep.length > 0) {
@@ -31,33 +33,33 @@ var SpeedShifter;
 
                 if (dep && dep.length > 0) {
                     for (i = 0; i < dep.length; i++) {
-                        depend = localStorage_helpers.getDepend(dep[i], depStorages);
-                        if (depend && !localStorage_helpers.compare(depend, vals[dep[i]])) {
+                        depend = LocalStorageHelpers.getDepend(dep[i], depStorages);
+                        if (depend && !LocalStorageHelpers.compare(depend, vals[dep[i]])) {
                             return true;
                         }
                     }
                 }
                 return false;
-            },
-            isItemOutdated: function (item, options, now) {
+            };
+            LocalStorageHelpers.isItemOutdated = function (item, options, now) {
                 if (typeof now === "undefined") { now = (new Date()).getTime(); }
                 if (!item || !options || (options.expires && !(item.time && item.time + options.expires > now))) {
                     return true;
                 }
                 return false;
-            },
-            isItemInvalid: function (item, options, depStorages, now) {
+            };
+            LocalStorageHelpers.isItemInvalid = function (item, options, depStorages, now) {
                 if (typeof now === "undefined") { now = (new Date()).getTime(); }
-                if (!item || !options || !depStorages || localStorage_helpers.isItemOutdated(item, options, now) || (options.dependent && localStorage_helpers.isDependentFailed(item.depends, options.dependent, depStorages))) {
+                if (!item || !options || !depStorages || LocalStorageHelpers.isItemOutdated(item, options, now) || (options.dependent && LocalStorageHelpers.isDependentFailed(item.depends, options.dependent, depStorages))) {
                     return true;
                 }
                 return false;
-            },
-            composeDeps: function (dep, depStorages) {
+            };
+            LocalStorageHelpers.composeDeps = function (dep, depStorages) {
                 if (dep && dep.length > 0) {
                     var deps = {}, i, depend, c = 0;
                     for (i = 0; i < dep.length; i++) {
-                        depend = localStorage_helpers.getDepend(dep[i], depStorages);
+                        depend = LocalStorageHelpers.getDepend(dep[i], depStorages);
                         if (depend) {
                             deps[dep[i]] = depend.value;
                             c++;
@@ -67,8 +69,10 @@ var SpeedShifter;
                         return deps;
                 }
                 return undefined;
-            }
-        };
+            };
+            return LocalStorageHelpers;
+        })();
+        Services.LocalStorageHelpers = LocalStorageHelpers;
 
         Services.LocalStorageProvider = function () {
             var provider = this, serviceProvider = this, ITEMS_NAME_DELIMITER = ".", ITEMS_NAME_DELIMITER_REG_SAFE = "\\.", DEF_CLEAN_INTERVAL = 5 * 60 * 1000;
@@ -226,7 +230,7 @@ var SpeedShifter;
                         me.get = function (valName) {
                             var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName, item = storage.get(propertyName);
                             if (item) {
-                                if (localStorage_helpers.isItemInvalid(storage.get(propertyName), options, allDep)) {
+                                if (LocalStorageHelpers.isItemInvalid(storage.get(propertyName), options, allDep)) {
                                     storage.remove(propertyName);
                                     return null;
                                 }
@@ -241,7 +245,7 @@ var SpeedShifter;
                             var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName, item = {
                                 data: val,
                                 time: (new Date()).getTime(),
-                                depends: localStorage_helpers.composeDeps(options.dependent, allDep)
+                                depends: LocalStorageHelpers.composeDeps(options.dependent, allDep)
                             };
                             try  {
                                 storage.set(propertyName, item);
@@ -326,7 +330,7 @@ var SpeedShifter;
                         private_me.isInvalid = function (key, now) {
                             if (typeof now === "undefined") { now = (new Date()).getTime(); }
                             if (private_me.isBelongs(key)) {
-                                return localStorage_helpers.isItemInvalid(storage.get(key), options, allDep, now);
+                                return LocalStorageHelpers.isItemInvalid(storage.get(key), options, allDep, now);
                             }
                             return false;
                         };
