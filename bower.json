@@ -16,7 +16,9 @@
     "karma-e2e.conf.js",
     "package.json"
   ],
-  "dependencies": {
-	"DefinitelyTyped": "*"
+  "devDependencies": {
+    "DefinitelyTyped": "*",
+	"angular": "~1.2.14",
+	"angular-mocks": "~1.2.14"
   }
 }

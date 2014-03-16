@@ -568,7 +568,7 @@ function test_bind() {
     $("form").bind("submit", function (event) {
         event.stopPropagation();
     });
-    $("p").bind("myCustomEvent", function (e, myName, myValue) {
+    $("p").bind("myCustomEvent", function (e, myName?, myValue?) {
         $(this).text(myName + ", hi there!");
         $("span").stop().css("opacity", 1)
         .text("myName = " + myName)
@@ -588,6 +588,70 @@ function test_bind() {
             $(this).removeClass("inside");
         }
     });
+}
+
+function test_unbind() {
+    $("#foo").unbind();
+
+    $("#foo").unbind("click");
+
+    var handler = function () {
+        alert("The quick brown fox jumps over the lazy dog.");
+    };
+    $("#foo").bind("click", handler);
+    $("#foo").unbind("click", handler);
+
+    $("#foo").bind("click", function () {
+        alert("The quick brown fox jumps over the lazy dog.");
+    });
+
+    // Will NOT work
+    $("#foo").unbind("click", function () {
+        alert("The quick brown fox jumps over the lazy dog.");
+    });
+
+    $("#foo").bind("click.myEvents", handler);
+
+    $("#foo").unbind("click");
+
+    $("#foo").unbind("click.myEvents");
+
+    $("#foo").unbind(".myEvents");
+
+    var timesClicked = 0;
+    $("#foo").bind("click", function (event) {
+        alert("The quick brown fox jumps over the lazy dog.");
+        timesClicked++;
+        if (timesClicked >= 3) {
+            $(this).unbind(event);
+        }
+    });
+
+    function aClick() {
+        $("div").show().fadeOut("slow");
+    }
+    $("#bind").click(function () {
+        $("#theone")
+            .bind("click", aClick)
+            .text("Can Click!");
+    });
+    $("#unbind").click(function () {
+        $("#theone")
+            .unbind("click", aClick)
+            .text("Does nothing...");
+    });
+
+    $("p").unbind();
+
+    $("p").unbind("click");
+
+    var foo = function () {
+        // Code to handle some kind of event
+    };
+
+    $("p").bind("click", foo); // ... Now foo will be called when paragraphs are clicked ...
+
+    $("p").unbind("click", foo); // ... foo will no longer be called.
 }
 
 function test_blur() {
@@ -699,7 +763,7 @@ function test_children() {
         var $kids = $(e.target).children();
         var len = $kids.addClass("hilite").length;
 
-        $("#results span:first").text(len.toString());
+        $("#results span:first").text(len);
         //$("#results span:last").text(e.target.tagName);
 
         e.preventDefault();
@@ -821,6 +885,12 @@ function test_clone() {
           .prepend('foo - ')
           .parent()
           .clone());
+}
+
+function test_prependTo() {
+    $("<p>Test</p>").prependTo(".inner");
+    $("h2").prependTo($(".container"));
+    $("span").prependTo("#foo");
 }
 
 function test_closest() {
@@ -1119,7 +1189,6 @@ function test_delay() {
     });
 }
 
-/* Not existing, but not recommended either
 function test_delegate() {
     $("table").delegate("td", "click", function () {
         $(this).toggleClass("chosen");
@@ -1137,7 +1206,7 @@ function test_delegate() {
     $("body").delegate("a", "click", function (event) {
         event.preventDefault();
     });
-    $("body").delegate("p", "myCustomEvent", function (e, myName, myValue) {
+    $("body").delegate("p", "myCustomEvent", function (e, myName?, myValue?) {
         $(this).text("Hi there!");
         $("span").stop().css("opacity", 1)
                  .text("myName = " + myName)
@@ -1147,7 +1216,48 @@ function test_delegate() {
         $("p").trigger("myCustomEvent");
     });
 }
-*/
+
+function test_undelegate() {
+    function aClick() {
+        $("div").show().fadeOut("slow");
+    }
+    $("#bind").click(function () {
+        $("body")
+            .delegate("#theone", "click", aClick)
+            .find("#theone").text("Can Click!");
+    });
+    $("#unbind").click(function () {
+        $("body")
+            .undelegate("#theone", "click", aClick)
+            .find("#theone").text("Does nothing...");
+    });
+
+    $("p").undelegate();
+
+    $("p").undelegate("click");
+
+    var foo = function () {
+        // Code to handle some kind of event
+    };
+
+    // ... Now foo will be called when paragraphs are clicked ...
+    $("body").delegate("p", "click", foo);
+
+    // ... foo will no longer be called.
+    $("body").undelegate("p", "click", foo);
+
+    var foo = function () {
+        // Code to handle some kind of event
+    };
+
+    // Delegate events under the ".whatever" namespace
+    $("form").delegate(":button", "click.whatever", foo);
+
+    $("form").delegate("input[type='text'] ", "keypress.whatever", foo);
+
+    // Unbind all events delegated under the ".whatever" namespace
+    $("form").undelegate(".whatever");
+}
 
 function test_dequeue() {
     $("button").click(function () {
@@ -1747,6 +1857,26 @@ function test_getScript() {
     });
 }
 
+function test_jQueryget() {
+    console.log($("li").get(0));
+    console.log($("li")[0]);
+    console.log($("li").get(-1));
+    $("*", document.body).click(function (event) {
+        event.stopPropagation();
+        var domElement = $(this).get(0);
+        $("span:first").text("Clicked on - " + domElement.nodeName);
+    });
+
+    function display(divs) {
+        var a = [];
+        for (var i = 0; i < divs.length; i++) {
+            a.push(divs[i].innerHTML);
+        }
+        $("span").text(a.join(" "));
+    }
+    display($("div").get().reverse());
+}
+
 function test_globalEval() {
     jQuery.globalEval("var newVar = true;");
 }
@@ -1773,15 +1903,10 @@ function test_has() {
 }
 
 function test_hasClass() {
-    $("div#result1").append($("p:first").hasClass("selected"));
-    $("div#result2").append($("p:last").hasClass("selected"));
-    $("div#result3").append($("p").hasClass("selected"));
-
     $('#mydiv').hasClass('foo');
-    // typescript has a bug to (boolean).toString() - I'll comment this code until typescript team solve this problem.
-    //$("div#result1").append($("p:first").hasClass("selected").toString());
-    //$("div#result2").append($("p:last").hasClass("selected").toString());
-    //$("div#result3").append($("p").hasClass("selected").toString());
+    $("div#result1").append($("p:first").hasClass("selected").toString());
+    $("div#result2").append($("p:last").hasClass("selected").toString());
+    $("div#result3").append($("p").hasClass("selected").toString());
 }
 
 function test_hasData() {
@@ -1914,6 +2039,38 @@ function test_height() {
         $(this).height(30)
                .css({ cursor: "auto", backgroundColor: "green" });
     });
+}
+
+function test_wrap() {
+    $(".inner").wrap("<div class='new'></div>");
+    $(".inner").wrap(function () {
+        return "<div class='" + $(this).text() + "'></div>";
+    });
+    $("span").wrap("<div><div><p><em><b></b></em></p></div></div>");
+    $("p").wrap(document.createElement("div"));
+    $("p").wrap($(".doublediv"));
+}
+
+function test_wrapAll() {
+    $(".inner").wrapAll("<div class='new' />");
+    $("p").wrapAll("<div></div>");
+    $("span").wrapAll("<div><div><p><em><b></b></em></p></div></div>");
+    $("p").wrapAll(document.createElement("div"));
+    $("p").wrapAll($(".doublediv"));
+}
+
+function test_wrapInner() {
+    $(".inner").wrapInner("<div class='new'></div>");
+    $(".inner").wrapInner(function () {
+        return "<div class='" + this.nodeValue + "'></div>";
+    });
+    var elem: Element;
+    $(elem).wrapInner("<div class='test'></div>");
+    $(elem).wrapInner("<div class=\"test\"></div>");
+    $("p").wrapInner("<b></b>");
+    $("body").wrapInner("<div><div><p><em><b></b></em></p></div></div>");
+    $("p").wrapInner(document.createElement("b"));
+    $("p").wrapInner($("<span class='red'></span>"));
 }
 
 function test_width() {
@@ -2067,11 +2224,18 @@ function test_index() {
 function test_innerHeight() {
     var p = $("p:first");
     $("p:last").text("innerHeight:" + p.innerHeight());
+
+    p.innerHeight(123);
+    p.innerHeight('123px');
 }
 
 function test_innerWidth() {
     var p = $("p:first");
     $("p:last").text("innerWidth:" + p.innerWidth());
+
+
+    p.innerWidth(123);
+    p.innerWidth('123px');
 }
 
 function test_outerHeight() {
@@ -2079,6 +2243,9 @@ function test_outerHeight() {
     $("p:last").text(
         "outerHeight:" + p.outerHeight() +
         " , outerHeight( true ):" + p.outerHeight(true));
+
+    p.outerHeight(123);
+    p.outerHeight('123px');
 }
 
 function test_outerWidth() {
@@ -2086,6 +2253,9 @@ function test_outerWidth() {
     $("p:last").text(
         "outerWidth:" + p.outerWidth() +
         " , outerWidth( true ):" + p.outerWidth(true));
+
+    p.outerWidth(123);
+    p.outerWidth('123px');
 }
 
 function test_scrollLeft() {
@@ -2765,6 +2935,36 @@ function test_makeArray() {
     jQuery.isArray(arr) === true;
 }
 
+function test_replaceAll() {
+    $("<h2>New heading</h2>").replaceAll(".inner");
+    $(".first").replaceAll(".third");
+    $("<b>Paragraph. </b>").replaceAll("p");
+}
+
+function test_replaceWith() {
+    $("div.second").replaceWith("<h2>New heading</h2>");
+    $("div.inner").replaceWith("<h2>New heading</h2>");
+    $("div.third").replaceWith($(".first"));
+
+    $("button").click(function () {
+        $(this).replaceWith("<div>" + $(this).text() + "</div>");
+    });
+
+    $("p").replaceWith("<b>Paragraph. </b>");
+
+    $("p").click(function () {
+        $(this).replaceWith($("div"));
+    });
+
+    $("button").on("click", function () {
+        var $container = $("div.container").replaceWith(function () {
+            return $(this).contents();
+        });
+
+        $("p").append($container.attr("class"));
+    });
+}
+
 function test_map() {
     $(':checkbox').map(function () {
         return this.id;
@@ -2773,16 +2973,25 @@ function test_map() {
         return $(this).val();
     }).get().join(", "));
     var mappedItems = $("li").map(function (index) {
-        var replacement = $("<li>").text($(this).text()).get(0);
-        if (index == 0) {
+        var replacement:any = $("<li>").text($(this).text()).get(0);
+        if (index === 0) {
+
+            // Make the first item all caps
             $(replacement).text($(replacement).text().toUpperCase());
-        } else if (index == 1 || index == 3) {
+        } else if (index === 1 || index === 3) {
+
+            // Delete the second and fourth items
             replacement = null;
-        } else if (index == 2) {
+        } else if (index === 2) {
+
+            // Make two of the third item and add some text
             replacement = [replacement, $("<li>").get(0)];
             $(replacement[0]).append("<b> - A</b>");
             $(replacement[1]).append("Extra <b> - B</b>");
         }
+
+        // Replacement will be a dom element, null,
+        // or an array of dom elements
         return replacement;
     });
     $("#results").append(mappedItems);
