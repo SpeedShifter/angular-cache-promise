@@ -23,7 +23,8 @@ module.exports = function (grunt) {
       // configurable paths
       app: require('./bower.json').appPath || 'app',
       dist: 'dist',
-	  src: 'src'
+	  src: 'src',
+	  test: 'test'
     },
 
     // Watches files for changes and runs tasks based on the changed files
@@ -47,7 +48,9 @@ module.exports = function (grunt) {
         files: ['Gruntfile.js']
       },
 	  typescript: {
-		files: ["<%= yeoman.app %>/mocks/**/*.ts", "<%= yeoman.app %>/scripts/**/*.ts"],
+		files: ["<%= yeoman.app %>/mocks/**/*.ts",
+				"<%= yeoman.app %>/scripts/**/*.ts",
+				"<%= yeoman.test %>/spec/**/*.ts"],
 		tasks: ["typescript"]
 	  },
       livereload: {
@@ -162,6 +165,13 @@ module.exports = function (grunt) {
 			  base_path: '<%= yeoman.src %>/scripts'
 		  }
 		},
+	    test: {
+		    src: ['<%= yeoman.test %>/**/*.ts'],
+		    options: {
+			    target: 'es5', //or es3
+			    base_path: '<%= yeoman.test %>'
+		    }
+	    },
 	    defs: {
 		    src: ['<%= yeoman.src %>/scripts/**/*.ts'],
 		    dest: '.tmp',
@@ -370,8 +380,9 @@ module.exports = function (grunt) {
         'compass:server'
       ],
       test: [
+	    'typescript:test',
 	    'typescript:dist',
-        'compass'
+//        'compass'
       ],
       dist: [
 	    'typescript:dist',
@@ -452,8 +463,8 @@ module.exports = function (grunt) {
   grunt.registerTask('test', [
     'clean:server',
     'concurrent:test',
-    'autoprefixer',
-    'connect:test',
+//    'autoprefixer',
+  //  'connect:test',
     'karma'
   ]);
 
