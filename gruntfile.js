@@ -448,9 +448,13 @@ module.exports = function (grunt) {
   ]);
 
   grunt.registerTask('build', [
-	'clean:dist',
-	'build-ts',
-	'build-defs'
+	  'clean:dist',
+	  'clean:tmp',
+	  'typescript:build',
+	  'copy:defs',
+	  'uglify:dist',
+	  'copy:min',
+	  'clean:tmp'
   ]);
 
   grunt.registerTask('default', [
@@ -478,13 +482,4 @@ module.exports = function (grunt) {
 		// when finished run the concatinations
 		grunt.task.run('concat');
 	});*/
-
-	grunt.registerTask('build-ts', [
-		'clean:tmp',
-		'typescript:build',
-		'copy:defs',
-		'uglify:dist',
-		'copy:min',
-		'clean:tmp'
-	]);
 };

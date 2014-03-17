@@ -9,7 +9,7 @@ declare module SpeedShifter.Services {
     interface ILocalStorageDepend {
         name: string;
         value: any;
-        comparator: (item1: any, item2: any) => boolean;
+        comparator?: (item1: any, item2: any) => boolean;
     }
     interface ILocalStorageProvider {
         setAppName(name: string): any;
@@ -50,7 +50,9 @@ declare module SpeedShifter.Services {
         }[], now?: number): boolean;
         static composeDeps(dep: string[], depStorages: {
             [name: string]: ILocalStorageDepend;
-        }[]): {};
+        }[]): {
+            [prop: string]: any;
+        };
     }
     var LocalStorageProvider: () => void;
 }

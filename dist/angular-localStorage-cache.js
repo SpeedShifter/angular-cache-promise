@@ -8,33 +8,23 @@ var SpeedShifter;
                 return dep && ((dep.comparator && dep.comparator(dep.value, val)) || (dep.value === val));
             };
             LocalStorageHelpers.getDepend = function (name, depStorages) {
-                for (var i = 0; i < depStorages.length; i++) {
+                for (var i = 0; depStorages && i < depStorages.length; i++) {
                     if (depStorages[i][name]) {
                         return depStorages[i][name];
                     }
                 }
-                return null;
+                return undefined;
             };
             LocalStorageHelpers.isDependentFailed = function (vals, deps, depStorages) {
-                var i, name, dep = angular.copy(deps), depend;
-                for (name in vals) {
-                    depend = LocalStorageHelpers.getDepend(name, depStorages);
-                    if (depend && !LocalStorageHelpers.compare(depend, vals[name])) {
-                        return true;
-                    }
-                    if (dep && dep.length > 0) {
-                        for (i = 0; i < dep.length; i++) {
-                            if (dep[i] == name) {
-                                dep.splice(i--, 1);
-                            }
-                        }
-                    }
-                }
+                if (!vals)
+                    return true;
 
-                if (dep && dep.length > 0) {
-                    for (i = 0; i < dep.length; i++) {
-                        depend = LocalStorageHelpers.getDepend(dep[i], depStorages);
-                        if (depend && !LocalStorageHelpers.compare(depend, vals[dep[i]])) {
+                var i, name, depend;
+
+                if (deps && deps.length > 0) {
+                    for (i = 0; i < deps.length; i++) {
+                        depend = LocalStorageHelpers.getDepend(deps[i], depStorages);
+                        if ((depend && !LocalStorageHelpers.compare(depend, vals[deps[i]])) || (!depend && angular.isDefined(vals[deps[i]]))) {
                             return true;
                         }
                     }
@@ -43,6 +33,8 @@ var SpeedShifter;
             };
             LocalStorageHelpers.isItemOutdated = function (item, options, now) {
                 if (typeof now === "undefined") { now = (new Date()).getTime(); }
+                if (item && !options)
+                    return false;
                 if (!item || !options || (options.expires && !(item.time && item.time + options.expires > now))) {
                     return true;
                 }
@@ -50,6 +42,8 @@ var SpeedShifter;
             };
             LocalStorageHelpers.isItemInvalid = function (item, options, depStorages, now) {
                 if (typeof now === "undefined") { now = (new Date()).getTime(); }
+                if (item && !options)
+                    return false;
                 if (!item || !options || !depStorages || LocalStorageHelpers.isItemOutdated(item, options, now) || (options.dependent && LocalStorageHelpers.isDependentFailed(item.depends, options.dependent, depStorages))) {
                     return true;
                 }
