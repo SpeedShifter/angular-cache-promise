@@ -75,28 +75,18 @@ module SpeedShifter.Services {
 			return undefined;
 		}
 		static isDependentFailed (vals: {[name: string]: any}, deps: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
-			var i, name,
-				dep = angular.copy(deps),
-				depend;
-			for (name in vals) {
-				depend = LocalStorageHelpers.getDepend(name, <{[name:string]: ILocalStorageDepend}[]>depStorages);
-				if (depend && !LocalStorageHelpers.compare(depend, vals[name])) {
-					return true;
-				}
-				if (dep && dep.length > 0) {
-					for (i=0;i<dep.length;i++) {
-						if (dep[i] == name) {
-							dep.splice(i--, 1);
-						}
-					}
-				}
-			}
+			if (!vals)
+				return true;
 
-			if (dep && dep.length > 0) {
-				for (i=0; i<dep.length; i++) {
-					depend = LocalStorageHelpers.getDepend(dep[i], <{[name:string]: ILocalStorageDepend}[]>depStorages);
-					if (depend && !LocalStorageHelpers.compare(depend, vals[dep[i]])) {
-						return true;
+			var i, name,
+				depend;
+
+			if (deps && deps.length > 0) {
+				for (i=0; i<deps.length; i++) {
+					depend = LocalStorageHelpers.getDepend(deps[i], <{[name:string]: ILocalStorageDepend}[]>depStorages);
+					if ((depend && !LocalStorageHelpers.compare(depend, vals[deps[i]])) ||
+						(!depend && angular.isDefined(vals[deps[i]]))) { // dependency is required, depStorages doesn't contains it, but vals contains, so compare is failed
+							return true;
 					}
 				}
 			}

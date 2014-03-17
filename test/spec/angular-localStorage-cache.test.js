@@ -28,6 +28,43 @@ describe('angular-localStorage-cache:', function () {
             expect(SpeedShifter.Services.LocalStorageHelpers.compare(globalDepStorage["userId"], null)).toBe(false);
             expect(SpeedShifter.Services.LocalStorageHelpers.compare(globalDepStorage["compare"], globalDepStorage["compare"].value)).toBe(true);
             expect(SpeedShifter.Services.LocalStorageHelpers.compare(globalDepStorage["compare"], { a: 4, b: 0, c: 2 })).toBe(true);
+            expect(SpeedShifter.Services.LocalStorageHelpers.compare(globalDepStorage["compare"], { a: 4, b: 1, c: 2 })).toBe(false);
+        });
+
+        it('isDependentFailed', function () {
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({
+                userId: globalDepStorage["userId"].value,
+                dev: depStorage["dev"].value
+            }, ["userId"], [depStorage, globalDepStorage])).toBe(false);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({
+                userId: globalDepStorage["userId"].value,
+                dev: depStorage["dev"].value
+            }, ["userId", "dev"], [depStorage, globalDepStorage])).toBe(false);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({
+                userId: globalDepStorage["userId"].value,
+                dev: depStorage["dev"].value
+            }, ["userId", "dev", "version"], [depStorage, globalDepStorage])).toBe(true);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, [], [depStorage, globalDepStorage])).toBe(false);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, [], [])).toBe(false);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, null, null)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, undefined, undefined)).toBe(false);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, ["a"], [depStorage, globalDepStorage])).toBe(false);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({ "a": 1 }, ["a"], [depStorage, globalDepStorage])).toBe(true);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, ["userId"], [depStorage, globalDepStorage])).toBe(true);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed(SpeedShifter.Services.LocalStorageHelpers.composeDeps(["userId", "dev"], [depStorage, globalDepStorage]), ["userId", "dev"], [depStorage, globalDepStorage])).toBe(false);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed(null, ["userId", "dev"], [depStorage, globalDepStorage])).toBe(true);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed(undefined, ["userId", "dev"], [depStorage, globalDepStorage])).toBe(true);
         });
 
         it('composeDeps', function () {
