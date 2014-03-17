@@ -93,6 +93,8 @@ module SpeedShifter.Services {
 			return false;
 		}
 		static isItemOutdated (item: ILocalStorageItemWrapper, options: ILocalStorageOptions, now: number = (new Date()).getTime()) {
+			if (item && !options)
+				return false;
 			if (!item || !options
 				|| (options.expires && !(item.time && item.time + options.expires > now))) {
 				return true;
@@ -100,6 +102,8 @@ module SpeedShifter.Services {
 			return false;
 		}
 		static isItemInvalid (item: ILocalStorageItemWrapper, options: ILocalStorageOptions, depStorages: {[name:string]: ILocalStorageDepend}[], now: number = (new Date()).getTime()) {
+			if (item && !options)
+				return false;
 			if (!item || !options || !depStorages
 				|| LocalStorageHelpers.isItemOutdated(item, options, now)
 				|| (options.dependent && LocalStorageHelpers.isDependentFailed(item.depends, options.dependent, depStorages))) {
@@ -107,9 +111,9 @@ module SpeedShifter.Services {
 			}
 			return false;
 		}
-		static composeDeps (dep: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
+		static composeDeps (dep: string[], depStorages: {[name:string]: ILocalStorageDepend}[]): {[prop: string]: any} {
 			if (dep && dep.length > 0) {
-				var deps = {},
+				var deps = <{[prop: string]: any}>{},
 					i, depend,
 					c = 0;
 				for (i=0; i<dep.length; i++) {

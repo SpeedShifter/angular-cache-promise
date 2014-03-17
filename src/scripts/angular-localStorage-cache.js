@@ -33,6 +33,8 @@ var SpeedShifter;
             };
             LocalStorageHelpers.isItemOutdated = function (item, options, now) {
                 if (typeof now === "undefined") { now = (new Date()).getTime(); }
+                if (item && !options)
+                    return false;
                 if (!item || !options || (options.expires && !(item.time && item.time + options.expires > now))) {
                     return true;
                 }
@@ -40,6 +42,8 @@ var SpeedShifter;
             };
             LocalStorageHelpers.isItemInvalid = function (item, options, depStorages, now) {
                 if (typeof now === "undefined") { now = (new Date()).getTime(); }
+                if (item && !options)
+                    return false;
                 if (!item || !options || !depStorages || LocalStorageHelpers.isItemOutdated(item, options, now) || (options.dependent && LocalStorageHelpers.isDependentFailed(item.depends, options.dependent, depStorages))) {
                     return true;
                 }

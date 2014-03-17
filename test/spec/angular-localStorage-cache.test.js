@@ -67,6 +67,54 @@ describe('angular-localStorage-cache:', function () {
             expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed(undefined, ["userId", "dev"], [depStorage, globalDepStorage])).toBe(true);
         });
 
+        it('isItemOutdated', function () {
+            var now = (new Date()).getTime();
+            var depOptions = {
+                expires: 20 * 1000
+            };
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated({ time: now }, depOptions)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated({ time: now - depOptions.expires + 10 }, depOptions)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated({ time: now - depOptions.expires - 10 }, depOptions)).toBe(true);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated({ time: now - depOptions.expires + 10 }, depOptions, now)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated({ time: now }, null)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated({ time: now }, {})).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated({}, {})).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated({}, depOptions)).toBe(true);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemOutdated(null, depOptions)).toBe(true);
+        });
+
+        it('isItemInvalid', function () {
+            var now = (new Date()).getTime();
+            var depOptions = {
+                expires: 20 * 1000,
+                dependent: ["userId", "dev"]
+            };
+            var value = {
+                time: now,
+                depends: {
+                    "userId": globalDepStorage["userId"].value,
+                    "version": globalDepStorage["version"].value,
+                    "dev": depStorage["dev"].value
+                },
+                data: 1
+            };
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid(value, depOptions, [depStorage, globalDepStorage], now)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid(value, {}, [depStorage, globalDepStorage], now)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid(value, null, [depStorage, globalDepStorage], now)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid(value, null, null, now)).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid(value, depOptions, null, now)).toBe(true);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid({ time: now - depOptions.expires - 10 }, depOptions, [depStorage, globalDepStorage], now)).toBe(true);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid({ time: now - depOptions.expires - 10 }, {}, [depStorage, globalDepStorage], now)).toBe(false);
+
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid(null, depOptions, [depStorage, globalDepStorage], now)).toBe(true);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid(undefined, depOptions, [depStorage, globalDepStorage], now)).toBe(true);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid({ depends: {} }, depOptions, [depStorage, globalDepStorage], now)).toBe(true);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isItemInvalid({}, {}, [depStorage, globalDepStorage])).toBe(false);
+        });
+
         it('composeDeps', function () {
             expect(SpeedShifter.Services.LocalStorageHelpers.composeDeps(["userId", "dev"], [depStorage])).toEqual({
                 dev: depStorage["dev"].value
