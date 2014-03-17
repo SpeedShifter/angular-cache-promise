@@ -159,7 +159,6 @@ module.exports = function (grunt) {
     typescript: {
 		dist: {
 		  src: ['<%= yeoman.src %>/scripts/**/*.ts'],
-		  dest: '<%= yeoman.dist %>',
 		  options: {
 			  target: 'es5', //or es3
 			  base_path: '<%= yeoman.src %>/scripts'
@@ -172,7 +171,7 @@ module.exports = function (grunt) {
 			    base_path: '<%= yeoman.test %>'
 		    }
 	    },
-	    defs: {
+	    build: {
 		    src: ['<%= yeoman.src %>/scripts/**/*.ts'],
 		    dest: '.tmp',
 		    options: {
@@ -180,19 +179,9 @@ module.exports = function (grunt) {
 			    base_path: '<%= yeoman.src %>/scripts',
 			    sourcemap: true,
 			    declaration: true,
-				comments: false
+			    comments: false
 		    }
 	    },
-		modules: {
-			src: ['<%= yeoman.src %>/**/*.ts', '!<%= yeoman.src %>/bower_components/**/*.*'],
-			dest: '.tmp',
-			options: {
-				target: 'es5', //or es3
-				base_path: '<%= yeoman.src %>',
-				sourcemap: false,
-				declaration: false
-			}
-		}
     },
 
     // Compiles Sass to CSS and generates necessary files if requested
@@ -345,16 +334,6 @@ module.exports = function (grunt) {
         dest: '.tmp/styles/',
         src: '{,*/}*.css'
       },
-		modules: {
-			expand: true,
-			cwd: '.tmp',
-			src: ['**/*.js'],
-			dest: '.tmp/js',
-			rename: function(dest, src) {
-				var path = require('path');
-				return dest + '/' + path.basename(src);
-			}
-		},
 	  min: {
 		  expand: true,
 		  cwd: '.tmp',
@@ -365,12 +344,12 @@ module.exports = function (grunt) {
 			  return dest + '/' + path.basename(src).replace(".js", ".min.js");
 		  }
 	  },
-		defs: {
-			expand: true,
-			cwd: '.tmp',
-			src: ['**/*.d.ts'],
-			dest: '<%= yeoman.dist %>'
-		}
+	  defs: {
+		  expand: true,
+		  cwd: '.tmp',
+		  src: ['**/*.d.ts', '**/*.js'],
+		  dest: '<%= yeoman.dist %>'
+	  }
     },
 
     // Run some tasks in parallel to speed up the build process
@@ -382,7 +361,7 @@ module.exports = function (grunt) {
       test: [
 	    'typescript:test',
 	    'typescript:dist',
-//        'compass'
+        'compass'
       ],
       dist: [
 	    'typescript:dist',
@@ -480,7 +459,7 @@ module.exports = function (grunt) {
     'build'
   ]);
 
-	grunt.registerTask("add-defs", "your description", function() {
+	/*grunt.registerTask("add-defs", "your description", function() {
 		var path = require('path'),
 			concat = grunt.config.get('concat') || {},
 			src = ".tmp/js",
@@ -491,31 +470,21 @@ module.exports = function (grunt) {
 		};
 
 		// read all subdirectories from your modules folder
-		grunt.file.expand(src+"/*.js").forEach(function (file) {
+		grunt.file.expand(src+"*//*.js").forEach(function (file) {
 			var name = file.replace(".module.", ".");
 			concat['add-defs'].files[dest+"/"+path.basename(name)] = [name, ""+file];
 		});
 		grunt.config.set('concat', concat);
 		// when finished run the concatinations
 		grunt.task.run('concat');
-	});
+	});*/
 
 	grunt.registerTask('build-ts', [
 		'clean:tmp',
-		'typescript:modules',
-		'copy:modules',
-		'add-defs',
-		'clean:tmp',
+		'typescript:build',
+		'copy:defs',
 		'uglify:dist',
 		'copy:min',
-		'clean:tmp'
-	]);
-
-	grunt.registerTask('build-defs', [
-		'clean:tmp',
-		'typescript:defs',
-		'replace:defs',
-		'copy:defs',
 		'clean:tmp'
 	]);
 };

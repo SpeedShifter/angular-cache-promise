@@ -34,7 +34,7 @@ module SpeedShifter.Services {
 		context?: any;
 	}
 
-	export var CachePromiseProvider = [function () {
+	export var CachePromiseProvider = function () {
 		var serviceProvider = <ICachePromiseProvider>this,
 			defOptions = <ICachePromiseOptions>{
 				capacity: null,
@@ -111,7 +111,8 @@ module SpeedShifter.Services {
 		serviceProvider.setOptions = function (options:ICachePromiseOptions) {
 			return defOptions = angular.extend({}, defOptions, options);
 		};
-	}];
-}
+	};
 
-/// angular.module speedshifter.cache-promise
+	var module = angular.module('speedshifter.cachePromise', []);
+	module.provider('cachePromise', CachePromiseProvider);
+}

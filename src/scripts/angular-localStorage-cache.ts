@@ -430,4 +430,7 @@ module SpeedShifter.Services {
 			provider.defOptions = <ILocalStorageOptions>angular.extend({}, provider.defOptions, options);
 		};
 	};
+
+	var module = angular.module('speedshifter.localStoragePromise', []);
+	module.provider('localStoragePromise', LocalStorageProvider);
 }

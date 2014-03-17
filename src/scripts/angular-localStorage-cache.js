@@ -365,4 +365,3 @@ var SpeedShifter;
     })(SpeedShifter.Services || (SpeedShifter.Services = {}));
     var Services = SpeedShifter.Services;
 })(SpeedShifter || (SpeedShifter = {}));
-//# sourceMappingURL=angular-localStorage-cache.js.map

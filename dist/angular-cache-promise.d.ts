@@ -23,7 +23,5 @@ declare module SpeedShifter.Services {
     interface ICachePromiseProvider {
         setOptions(options: ICachePromiseOptions): ICachePromiseOptions;
     }
-    var CachePromiseProvider: {
-        (): void;
-    }[];
+    var CachePromiseProvider: () => void;
 }
