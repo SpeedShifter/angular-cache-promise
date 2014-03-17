@@ -67,12 +67,12 @@ module SpeedShifter.Services {
 				|| (dep.value === val));
 		}
 		static getDepend (name: string, depStorages: {[nm:string]: ILocalStorageDepend}[]) {
-			for (var i=0; i<depStorages.length; i++) {
+			for (var i=0; depStorages && i<depStorages.length; i++) {
 				if (depStorages[i][name]) {
 					return depStorages[i][name];
 				}
 			}
-			return null;
+			return undefined;
 		}
 		static isDependentFailed (vals: {[name: string]: any}, deps: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
 			var i, name,

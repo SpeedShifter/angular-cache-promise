@@ -8,12 +8,12 @@ var SpeedShifter;
                 return dep && ((dep.comparator && dep.comparator(dep.value, val)) || (dep.value === val));
             };
             LocalStorageHelpers.getDepend = function (name, depStorages) {
-                for (var i = 0; i < depStorages.length; i++) {
+                for (var i = 0; depStorages && i < depStorages.length; i++) {
                     if (depStorages[i][name]) {
                         return depStorages[i][name];
                     }
                 }
-                return null;
+                return undefined;
             };
             LocalStorageHelpers.isDependentFailed = function (vals, deps, depStorages) {
                 var i, name, dep = angular.copy(deps), depend;
