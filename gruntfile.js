@@ -360,8 +360,8 @@ module.exports = function (grunt) {
       ],
       test: [
 	    'typescript:test',
-	    'typescript:dist',
-        'compass'
+	    'typescript:dist'
+//        'compass'
       ],
       dist: [
 	    'typescript:dist',

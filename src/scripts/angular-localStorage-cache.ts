@@ -11,7 +11,7 @@ module SpeedShifter.Services {
 	export interface ILocalStorageDepend {
 		name: string;
 		value: any;
-		comparator: (item1: any, item2: any) => boolean;
+		comparator?: (item1: any, item2: any) => boolean;
 	}
 
 	export interface ILocalStorageProvider {
