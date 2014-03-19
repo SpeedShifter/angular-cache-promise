@@ -50,7 +50,7 @@ var SpeedShifter;
                             if (cached && (!timeout || (now - cached.time < timeout)) && (!opt.timeout || (now - cached.time < opt.timeout))) {
                                 return opt.defResolver.apply(cached.context || this, cached.data);
                             }
-                            return null;
+                            return undefined;
                         };
                         me.set = function (key, promise, context) {
                             var cached_obj = {

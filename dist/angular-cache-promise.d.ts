@@ -1,4 +1,4 @@
-
+/// <reference path="../inc.d.ts" />
 declare module SpeedShifter.Services {
     interface ICachePromiseObject {
         get<T>(key: string, timeout?: number): T;

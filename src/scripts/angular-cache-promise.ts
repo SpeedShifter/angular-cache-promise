@@ -77,7 +77,7 @@ module SpeedShifter.Services {
 						&& (!opt.timeout || (now - cached.time < opt.timeout))) {
 						return opt.defResolver.apply(cached.context || this, cached.data);
 					}
-					return null;
+					return undefined;
 				};
 				me.set = function (key:string, promise:any, context?:any) {
 					var cached_obj = <ICachePromisedObj>{

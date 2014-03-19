@@ -1,4 +1,4 @@
-
+/// <reference path="../inc.d.ts" />
 declare module SpeedShifter.Services {
     interface ILocalStorageOptions {
         expires?: number;
