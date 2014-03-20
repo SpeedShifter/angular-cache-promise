@@ -47,23 +47,32 @@ var SpeedShifter;
                             if (cached && cached.promise) {
                                 return cached.promise;
                             }
-                            if (cached && (!timeout || (now - cached.time < timeout)) && (!opt.timeout || (now - cached.time < opt.timeout))) {
-                                return opt.defResolver.apply(cached.context || this, cached.data);
+                            if (cached) {
+                                if ((!timeout || (now - cached.time < timeout)) && (!opt.timeout || (now - cached.time < opt.timeout))) {
+                                    return opt.defResolver.apply(this, cached.data);
+                                } else
+                                    cache.remove(key);
                             }
                             return undefined;
                         };
-                        me.set = function (key, promise, context) {
+                        me.set = function (key, promise) {
                             var cached_obj = {
-                                context: context,
                                 promise: promise
                             };
 
                             var fnc = function () {
-                                cached_obj.data = Array.prototype.slice.call(arguments);
+                                var values = [];
+                                for (var _i = 0; _i < (arguments.length - 0); _i++) {
+                                    values[_i] = arguments[_i + 0];
+                                }
+                                cached_obj.data = values;
                                 cached_obj.time = (new Date()).getTime();
                                 delete cached_obj.promise;
                             };
-                            promise.then(fnc, opt.saveFail && fnc);
+                            promise.then(fnc, opt.saveFail ? fnc : function () {
+                                delete cached_obj.promise;
+                                cache.remove(key);
+                            });
 
                             cache.put(key, cached_obj);
                             return promise;

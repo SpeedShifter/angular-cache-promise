@@ -22,7 +22,7 @@ describe('angular-localStorage-cache:', function(){
 			expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("dev", [depStorage, globalDepStorage]))
 				.toEqual(depStorage["dev"]);
 			expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("dev", [depStorage, globalDepStorage]))
-				.toNotEqual(globalDepStorage["dev"]);
+				.not.toEqual(globalDepStorage["dev"]);
 			expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("version", [depStorage, depStorage, depStorage, depStorage, globalDepStorage]))
 				.toEqual(globalDepStorage["version"]);
 			expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("a", [depStorage, globalDepStorage]))

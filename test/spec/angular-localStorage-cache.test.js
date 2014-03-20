@@ -17,7 +17,7 @@ describe('angular-localStorage-cache:', function () {
         it('getDepend', function () {
             expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("userId", [depStorage, globalDepStorage])).toEqual(globalDepStorage["userId"]);
             expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("dev", [depStorage, globalDepStorage])).toEqual(depStorage["dev"]);
-            expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("dev", [depStorage, globalDepStorage])).toNotEqual(globalDepStorage["dev"]);
+            expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("dev", [depStorage, globalDepStorage])).not.toEqual(globalDepStorage["dev"]);
             expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("version", [depStorage, depStorage, depStorage, depStorage, globalDepStorage])).toEqual(globalDepStorage["version"]);
             expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("a", [depStorage, globalDepStorage])).toBeUndefined();
         });

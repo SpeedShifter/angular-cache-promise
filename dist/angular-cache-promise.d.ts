@@ -2,8 +2,8 @@
 declare module SpeedShifter.Services {
     interface ICachePromiseObject {
         get<T>(key: string, timeout?: number): T;
-        set(key: string, promise: JQueryPromise<any>, context?: any): JQueryPromise<any>;
-        set(key: string, promise: ng.IPromise<any>, context?: any): ng.IPromise<any>;
+        set(key: string, promise: JQueryPromise<any>): JQueryPromise<any>;
+        set(key: string, promise: ng.IPromise<any>): ng.IPromise<any>;
         remove(key: string): any;
         removeAll(): any;
     }

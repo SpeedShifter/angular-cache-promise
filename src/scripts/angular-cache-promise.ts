@@ -5,8 +5,8 @@ module SpeedShifter.Services {
 	export interface ICachePromiseObject {
 		get<T>(key: string, timeout?: number): T;
 
-		set(key: string, promise: JQueryPromise<any>, context?: any): JQueryPromise<any>;
-		set(key: string, promise: ng.IPromise<any>, context?: any): ng.IPromise<any>;
+		set(key: string, promise: JQueryPromise<any>): JQueryPromise<any>;
+		set(key: string, promise: ng.IPromise<any>): ng.IPromise<any>;
 
 		remove(key: string): any;
 		removeAll(): any;
@@ -31,7 +31,6 @@ module SpeedShifter.Services {
 		time?: number;
 		promise?: any;
 		data?: any; // cached data
-		context?: any;
 	}
 
 	export var CachePromiseProvider = function () {
@@ -72,25 +71,29 @@ module SpeedShifter.Services {
 					if (cached && cached.promise) {
 						return cached.promise;
 					}
-					if (cached
-						&& (!timeout || (now - cached.time < timeout))
-						&& (!opt.timeout || (now - cached.time < opt.timeout))) {
-						return opt.defResolver.apply(cached.context || this, cached.data);
+					if (cached) {
+						if ((!timeout || (now - cached.time < timeout))
+							&& (!opt.timeout || (now - cached.time < opt.timeout))) {
+							return opt.defResolver.apply(this, cached.data);
+						} else
+							cache.remove(key);
 					}
 					return undefined;
 				};
-				me.set = function (key:string, promise:any, context?:any) {
+				me.set = function (key:string, promise:any) {
 					var cached_obj = <ICachePromisedObj>{
-						context: context,
 						promise: promise
 					};
 
-					var fnc = ()=> {
-						cached_obj.data = Array.prototype.slice.call(arguments);
+					var fnc = (...values:any[])=> {
+						cached_obj.data = values;
 						cached_obj.time = (new Date()).getTime();
 						delete cached_obj.promise;
 					};
-					promise.then(fnc, opt.saveFail && fnc);
+					promise.then(fnc, opt.saveFail ? fnc : () => {
+						delete cached_obj.promise;
+						cache.remove(key);
+					});
 
 					cache.put(key, cached_obj);
 					return promise;
