@@ -1,13 +1,14 @@
 'use strict';
 describe('angular-cache-promise:', function () {
-    var cachePromise, $q;
+    var cachePromise, $timeout, $q;
     beforeEach(function () {
         angular.module('test', ['speedshifter.cachePromise']);
     });
     beforeEach(module('test'));
-    beforeEach(inject(function (_cachePromise_, _$q_) {
+    beforeEach(inject(function (_cachePromise_, _$q_, _$timeout_) {
         cachePromise = _cachePromise_;
         $q = _$q_;
+        $timeout = _$timeout_;
     }));
     describe('cachePromise:', function () {
         it('should create new cache factory', function () {
@@ -26,8 +27,8 @@ describe('angular-cache-promise:', function () {
         });
     });
     describe('cachePromise:', function () {
-        var cache, def, promise, val;
-        beforeEach(inject(function (_cachePromise_) {
+        var cache, def, promise, val, result;
+        beforeEach(function () {
             cache = cachePromise("cache1", {
                 capacity: 100,
                 timeout: 10 * 1000
@@ -35,7 +36,7 @@ describe('angular-cache-promise:', function () {
             def = $q.defer();
             val = 1;
             promise = def.promise;
-        }));
+        });
         it('no cache to be undefined', function () {
             expect(cache.get("val")).toBeUndefined();
         });
@@ -46,37 +47,43 @@ describe('angular-cache-promise:', function () {
         it('after resolving promise, get should be resoled with correct value', function () {
             expect(cache.set("val", promise)).toEqual(promise);
             cache.get("val").then(function (data) {
-                expect(data).not.toBeUndefined();
-                expect(data).toEqual(val);
+                result = data;
             });
+            expect(result).toBeUndefined();
 
             def.resolve(val);
 
+            $timeout.flush();
+            expect(result).toBe(val);
+
+            var result2;
             cache.get("val").then(function (data) {
-                expect(data).not.toBeUndefined();
-                expect(data).toEqual(val);
+                result2 = data;
             });
+
+            $timeout.flush();
+            expect(result2).toBe(val);
         });
         it('resolving promise shouldn\'t rely on removing item from cache', function () {
             expect(cache.set("val", promise)).toEqual(promise);
             cache.get("val").then(function (data) {
-                expect(data).not.toBeUndefined();
-                expect(data).toEqual(val);
+                result = data;
             });
 
             cache.removeAll();
             def.resolve(val);
 
+            $timeout.flush();
+            expect(result).toBe(val);
             expect(cache.get("val")).toBeUndefined();
         });
     });
     describe('cachePromise: timeouts', function () {
-        var cache, def, promise, val;
+        var cache, def, promise, val, result;
         beforeEach(inject(function (_cachePromise_) {
             cache = cachePromise("cache1", {
                 capacity: 100,
-                timeout: 5 * 1000,
-                JQPromise: true
+                timeout: 5 * 1000
             });
             def = $q.defer();
             val = 1;
@@ -99,10 +106,13 @@ describe('angular-cache-promise:', function () {
         it('after failed promise, get should return undefined', function () {
             expect(cache.set("val", promise)).toEqual(promise);
             cache.get("val").catch(function (data) {
-                expect(data).toEqual(val);
+                result = data;
             });
 
             def.reject(val);
+
+            $timeout.flush();
+            expect(result).toBe(val);
 
             jasmine.clock().tick(10);
 
@@ -116,7 +126,7 @@ describe('angular-cache-promise:', function () {
 
             expect(cache.set("val", promise)).toEqual(promise);
             cache.get("val").then(function (data) {
-                expect(data).toEqual(val);
+                result = data;
             });
 
             jasmine.clock().tick(2 * 1000);
@@ -126,12 +136,19 @@ describe('angular-cache-promise:', function () {
 
             def.resolve(val);
 
+            $timeout.flush();
+            expect(result).toBe(val);
+
             jasmine.clock().tick(4 * 1000);
             Date.prototype.getTime['and'].returnValue(4 * 1000);
 
+            result = null;
             expect(cache.get("val").then(function (data) {
-                expect(data).toEqual(val);
+                result = data;
             })).toBeDefined();
+
+            $timeout.flush();
+            expect(result).toBe(val);
 
             jasmine.clock().tick(10 * 1000);
             Date.prototype.getTime['and'].returnValue(10 * 1000);
@@ -140,9 +157,30 @@ describe('angular-cache-promise:', function () {
                 expect(cache.get("val")).toBeUndefined();
             }, 10);
         });
+
+        it('should work with multiple promises', function () {
+            expect(cache.set("val", promise)).toEqual(promise);
+            var result1, result2;
+            cache.get("val").catch(function (data) {
+                result = data;
+            });
+            cache.get("val").catch(function (data) {
+                result1 = data;
+            });
+            cache.get("val").catch(function (data) {
+                result2 = data;
+            });
+
+            def.reject(val);
+
+            $timeout.flush();
+            expect(result).toBe(val);
+            expect(result1).toBe(val);
+            expect(result2).toBe(val);
+        });
     });
     describe('cachePromise: JQuery', function () {
-        var cache, def, promise, val;
+        var cache, def, promise, val, result;
         beforeEach(inject(function (_cachePromise_) {
             cache = cachePromise("cache1", {
                 capacity: 100,
@@ -163,16 +201,14 @@ describe('angular-cache-promise:', function () {
         it('after resolving promise, get should be resoled with correct value', function () {
             expect(cache.set("val", promise)).toEqual(promise);
             cache.get("val").then(function (data) {
-                expect(data).not.toBeUndefined();
-                expect(data).toEqual(val);
+                result = data;
             });
+
+            expect(result).toBeUndefined();
 
             def.resolve(val);
 
-            cache.get("val").then(function (data) {
-                expect(data).not.toBeUndefined();
-                expect(data).toEqual(val);
-            });
+            expect(result).toBe(val);
         });
         it('multiple resolve values', function () {
             var val2 = { a: 1, b: 2 };
