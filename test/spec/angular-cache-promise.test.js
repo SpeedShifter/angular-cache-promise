@@ -274,4 +274,50 @@ describe('angular-cache-promise:', function () {
             expect(cache.get("val")).toBeUndefined();
         });
     });
+    describe('cachePromise: defResolver:', function () {
+        var cache, def, promise, val, result, options = {
+            capacity: 100,
+            defResolver: function () {
+                var values = [];
+                for (var _i = 0; _i < (arguments.length - 0); _i++) {
+                    values[_i] = arguments[_i + 0];
+                }
+                var def = $q.defer();
+                def.resolve.apply(this, values);
+                return def.promise;
+            }
+        };
+
+        beforeEach(function () {
+            spyOn(options, 'defResolver').and.callThrough();
+
+            cache = cachePromise("cache2", options);
+
+            def = $q.defer();
+            val = 1;
+            promise = def.promise;
+        });
+        it('new defResolver should be called instead of builtin', function () {
+            expect(cache.set("val", promise)).toEqual(promise);
+            cache.get("val").then(function (data) {
+                result = data;
+            });
+            expect(result).toBeUndefined();
+
+            def.resolve(val);
+
+            $timeout.flush();
+            expect(result).toBe(val);
+            expect(options.defResolver).not.toHaveBeenCalled();
+
+            var result2;
+            cache.get("val").then(function (data) {
+                result2 = data;
+            });
+
+            $timeout.flush();
+            expect(result2).toBe(val);
+            expect(options.defResolver).toHaveBeenCalled();
+        });
+    });
 });

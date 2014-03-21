@@ -296,4 +296,50 @@ describe('angular-cache-promise:', function(){
 			expect(cache.get("val")).toBeUndefined();
 		});
 	});
+	describe('cachePromise: defResolver:', function () {
+		var cache: SpeedShifter.Services.ICachePromiseObject,
+			def: ng.IDeferred<any>,
+			promise: ng.IPromise<any>,
+			val, result,
+			options = {
+				capacity: 100, // for angular $cacheFactory
+				defResolver: <SpeedShifter.Services.ICachePromiseDefResolver<ng.IPromise<any>>> function (...values:any[]) {
+					var def = $q.defer();
+					def.resolve.apply(this, values);
+					return def.promise;
+				}
+			};
+
+		beforeEach(function () {
+			spyOn(options, 'defResolver').and.callThrough();
+
+			cache = cachePromise("cache2", options);
+
+			def = $q.defer();
+			val = 1;
+			promise = def.promise;
+		});
+		it('new defResolver should be called instead of builtin', function () {
+			expect(cache.set("val", promise)).toEqual(promise);
+			cache.get<ng.IPromise<any>>("val").then(function (data) {
+				result = data;
+			});
+			expect(result).toBeUndefined();
+
+			def.resolve(val);
+
+			$timeout.flush();
+			expect(result).toBe(val);
+			expect(options.defResolver).not.toHaveBeenCalled();
+
+			var result2;
+			cache.get<ng.IPromise<any>>("val").then(function (data) {
+				result2 = data;
+			});
+
+			$timeout.flush();
+			expect(result2).toBe(val);
+			expect(options.defResolver).toHaveBeenCalled();
+		});
+	});
 });
