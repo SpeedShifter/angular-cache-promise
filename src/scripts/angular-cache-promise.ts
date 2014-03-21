@@ -40,9 +40,11 @@ module SpeedShifter.Services {
 				capacity: null,
 				timeout: null,
 				saveFail: false,
+				dontSaveResult: false,
 				defResolver: null,
 				JQPromise: false
-			};
+			},
+			cacheStore = <{[id:string] : ICachePromiseObject}>{};
 
 		this.$get = ['$q', '$cacheFactory', function ($q:ng.IQService, $cacheFactory:ng.ICacheFactoryService) {
 			var ngDefResolver = <ICachePromiseDefResolver<ng.IPromise<any>>> function (...values:any[]) {
@@ -57,7 +59,10 @@ module SpeedShifter.Services {
 				};
 
 			return <ICachePromiseService>function (cacheId:string, options?:ICachePromiseOptions) {
-				var me = <ICachePromiseObject>{},
+				if (cacheStore[cacheId])
+					return cacheStore[cacheId];
+
+				var me = cacheStore[cacheId] = <ICachePromiseObject>{},
 					opt = <ICachePromiseOptions>angular.extend({}, defOptions, options),
 					cache = $cacheFactory(cacheId, options);
 

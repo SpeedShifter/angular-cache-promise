@@ -8,9 +8,10 @@ var SpeedShifter;
                 capacity: null,
                 timeout: null,
                 saveFail: false,
+                dontSaveResult: false,
                 defResolver: null,
                 JQPromise: false
-            };
+            }, cacheStore = {};
 
             this.$get = [
                 '$q', '$cacheFactory', function ($q, $cacheFactory) {
@@ -33,7 +34,10 @@ var SpeedShifter;
                     };
 
                     return function (cacheId, options) {
-                        var me = {}, opt = angular.extend({}, defOptions, options), cache = $cacheFactory(cacheId, options);
+                        if (cacheStore[cacheId])
+                            return cacheStore[cacheId];
+
+                        var me = cacheStore[cacheId] = {}, opt = angular.extend({}, defOptions, options), cache = $cacheFactory(cacheId, options);
 
                         if (!opt.defResolver || !angular.isFunction(opt.defResolver)) {
                             if (opt.JQPromise)

@@ -15,21 +15,8 @@ describe('angular-cache-promise:', function(){
 		$q = _$q_;
 		$timeout = _$timeout_;
 	}));
-	describe('cachePromise:', function () {
-		it('should create new cache factory', function () {
-			expect(cachePromise).not.toBeNull();
-		});
-		it('should create new cache object', function () {
-			var cache = cachePromise("cache1", {
-				capacity: 100, // for angular $cacheFactory
-				timeout: 10*1000
-			});
-			expect(cache).toBeDefined();
-			expect(cache.get).toBeDefined();
-			expect(cache.set).toBeDefined();
-			expect(cache.remove).toBeDefined();
-			expect(cache.removeAll).toBeDefined();
-		});
+	it('should create new cache factory', function () {
+		expect(cachePromise).not.toBeNull();
 	});
 	describe('cachePromise:', function () {
 		var cache: SpeedShifter.Services.ICachePromiseObject,
@@ -46,12 +33,16 @@ describe('angular-cache-promise:', function(){
 			val = 1;
 			promise = def.promise;
 		});
+
 		it('no cache to be undefined', function () {
 			expect(cache.get("val")).toBeUndefined(); // before set
 		});
-		it('after set unresolved promise, get should return promise', function () {
-			expect(cache.set("val", promise)).toEqual(promise);
-			expect(cache.get("val")).toEqual(promise); // after set
+		it('should create new cache object', function () {
+			expect(cache).toBeDefined();
+			expect(cache.get).toBeDefined();
+			expect(cache.set).toBeDefined();
+			expect(cache.remove).toBeDefined();
+			expect(cache.removeAll).toBeDefined();
 		});
 		it('after resolving promise, get should be resoled with correct value', function () {
 			expect(cache.set("val", promise)).toEqual(promise);
@@ -85,6 +76,25 @@ describe('angular-cache-promise:', function(){
 
 			expect(result).toBe(val);
 			expect(cache.get("val")).toBeUndefined();
+		});
+		it('cache with same name, should be same', function () {
+			var cache2 = cachePromise("cache1", null);
+			expect(cache2).toEqual(cache);
+
+			expect(cache.set("val", promise)).toEqual(promise);
+			cache.get<ng.IPromise<any>>("val").then(function (data) {
+				result = data;
+			});
+			var result2;
+			cache2.get<ng.IPromise<any>>("val").then(function (data) {
+				result2 = data;
+			});
+
+			def.resolve(val);
+
+			$timeout.flush();
+			expect(result).toBe(val);
+			expect(result2).toBe(val);
 		});
 	});
 	describe('cachePromise: timeouts:', function () {
