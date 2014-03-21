@@ -68,6 +68,9 @@ var SpeedShifter;
                                 cached_obj.data = values;
                                 cached_obj.time = (new Date()).getTime();
                                 delete cached_obj.promise;
+                                if (opt.dontSaveResult || opt.timeout === 0) {
+                                    cache.remove(key);
+                                }
                             };
                             promise.then(fnc, opt.saveFail ? fnc : function () {
                                 delete cached_obj.promise;

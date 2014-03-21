@@ -17,6 +17,7 @@ module SpeedShifter.Services {
 	export interface ICachePromiseOptions {
 		capacity?: number; // for angular $cacheFactory
 		timeout?: number;
+		dontSaveResult?: boolean; // same as to set timeout as 0
 		defResolver?: ICachePromiseDefResolver<any>;
 		JQPromise?: boolean;
 		saveFail?: boolean;
@@ -89,6 +90,9 @@ module SpeedShifter.Services {
 						cached_obj.data = values;
 						cached_obj.time = (new Date()).getTime();
 						delete cached_obj.promise;
+						if (opt.dontSaveResult || opt.timeout === 0) {
+							cache.remove(key);
+						}
 					};
 					promise.then(fnc, opt.saveFail ? fnc : () => {
 						delete cached_obj.promise;

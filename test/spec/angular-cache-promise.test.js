@@ -72,13 +72,13 @@ describe('angular-cache-promise:', function () {
 
             cache.removeAll();
             def.resolve(val);
-
             $timeout.flush();
+
             expect(result).toBe(val);
             expect(cache.get("val")).toBeUndefined();
         });
     });
-    describe('cachePromise: timeouts', function () {
+    describe('cachePromise: timeouts:', function () {
         var cache, def, promise, val, result;
         beforeEach(inject(function (_cachePromise_) {
             cache = cachePromise("cache1", {
@@ -179,7 +179,7 @@ describe('angular-cache-promise:', function () {
             expect(result2).toBe(val);
         });
     });
-    describe('cachePromise: JQuery', function () {
+    describe('cachePromise: JQuery:', function () {
         var cache, def, promise, val, result;
         beforeEach(inject(function (_cachePromise_) {
             cache = cachePromise("cache1", {
@@ -227,6 +227,41 @@ describe('angular-cache-promise:', function () {
                 expect(data2).toEqual(val2);
                 expect(data3).toEqual(val3);
             });
+        });
+    });
+    describe('cachePromise: dontSaveResult:', function () {
+        var cache, def, promise, val, result;
+        beforeEach(function () {
+            cache = cachePromise("cache1", {
+                capacity: 100,
+                timeout: 0,
+                dontSaveResult: true
+            });
+            def = $q.defer();
+            val = 1;
+            promise = def.promise;
+        });
+        it('after resolving, cache value should be removed', function () {
+            expect(cache.set("val", promise)).toEqual(promise);
+            expect(cache.get("val")).toEqual(promise);
+            cache.get("val").then(function (data) {
+                result = data;
+            });
+            var result2;
+            cache.get("val").then(function (data) {
+                result2 = data;
+            });
+
+            expect(result).toBeUndefined();
+            expect(result2).toBeUndefined();
+
+            def.resolve(val);
+            $timeout.flush();
+
+            expect(result).toBe(val);
+            expect(result2).toBe(val);
+
+            expect(cache.get("val")).toBeUndefined();
         });
     });
 });

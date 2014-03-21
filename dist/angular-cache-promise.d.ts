@@ -13,6 +13,7 @@ declare module SpeedShifter.Services {
     interface ICachePromiseOptions {
         capacity?: number;
         timeout?: number;
+        dontSaveResult?: boolean;
         defResolver?: ICachePromiseDefResolver<any>;
         JQPromise?: boolean;
         saveFail?: boolean;
