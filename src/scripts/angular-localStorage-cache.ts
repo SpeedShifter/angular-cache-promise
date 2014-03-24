@@ -27,7 +27,7 @@ module SpeedShifter.Services {
 		getLocalStorageKey(valName:string);
 		get(valName:string);
 		set(valName:string, val, updated?:number);
-		remove(valName:string, limit?:number);
+		remove(valName:string);
 		clear(); // clear all bunch of items
 		clearStorage(); // clear all storage totally, but only registered items
 		setDependence(dep: ILocalStorageDepend, global?: boolean);
@@ -45,7 +45,7 @@ module SpeedShifter.Services {
 		isBelongs(key: string): boolean;
 		isInvalid(key: string, now?: number): boolean;
 		isCritical(key: string): boolean;
-		cleanStorage();
+		cleanStorage(delay?: number);
 		setClearInterval(time?: number);
 		clearInterval: ng.IPromise<any>;
 	}
@@ -55,7 +55,7 @@ module SpeedShifter.Services {
 		getCacheObject(id: string): ILocalStorageObject;
 		registerCacheObject(id: string, cache: ILocalStorageObject, private_cache: ILocalStoragePrivateObject);
 		unregisterCacheObject(id: string);
-		cleanStorage(): number;
+		cleanStorage(delay?: number): number;
 		cleanOnStorageOverflow(limit: number): number;
 		clearStorage(): number;
 		setClearInterval(time?: number);
@@ -66,7 +66,8 @@ module SpeedShifter.Services {
 		static compare(dep: ILocalStorageDepend, val) {
 			return dep
 				&& ((dep.comparator && dep.comparator(dep.value, val))
-				|| (dep.value === val));
+				|| (dep.value === val)
+				|| (angular.isObject(dep.value) && angular.equals(dep.value, val)));
 		}
 		static getDepend (name: string, depStorages: {[nm:string]: ILocalStorageDepend}[]) {
 			for (var i=0; depStorages && i<depStorages.length; i++) {
@@ -86,8 +87,9 @@ module SpeedShifter.Services {
 			if (deps && deps.length > 0) {
 				for (i=0; i<deps.length; i++) {
 					depend = LocalStorageHelpers.getDepend(deps[i], <{[name:string]: ILocalStorageDepend}[]>depStorages);
-					if ((depend && !LocalStorageHelpers.compare(depend, vals[deps[i]])) ||
-						(!depend && angular.isDefined(vals[deps[i]]))) { // dependency is required, depStorages doesn't contains it, but vals contains, so compare is failed
+					if (!depend
+						|| angular.isUndefined(vals[deps[i]])
+						|| (depend && !LocalStorageHelpers.compare(depend, vals[deps[i]]))) { // dependency is required, depStorages doesn't contains it, or vals doesn't so
 							return true;
 					}
 				}
@@ -142,7 +144,7 @@ module SpeedShifter.Services {
 		provider.name = 'ngLocalStorage';
 		provider.defOptions = <ILocalStorageOptions>{};
 
-		this.$get = ['$log', '$window', '$interval', function ($log: ng.ILogService, $window: {localStorage: Storage}, $interval: ng.IIntervalService) {
+		this.$get = ['$log', '$window', '$interval', '$timeout', function ($log: ng.ILogService, $window: {localStorage: Storage}, $interval: ng.IIntervalService, $timeout: ng.ITimeoutService) {
 			var _localStorage = <Storage>((typeof $window.localStorage === 'undefined') ? undefined : $window.localStorage),
 				_localStorage_supported = !(typeof _localStorage === 'undefined' || typeof JSON === 'undefined'),
 				storage = {
@@ -200,8 +202,13 @@ module SpeedShifter.Services {
 			cacheManager.unregisterCacheObject = function(id: string) {
 				delete cacheManager.cacheStack[id];
 			};
-			cacheManager.cleanStorage = function () {
+			cacheManager.cleanStorage = function (delay?:number) {
 				if (!_localStorage_supported) return;
+
+				if (angular.isDefined(delay) && angular.isNumber(delay)) {
+					$timeout(cacheManager.cleanStorage, delay);
+					return;
+				}
 
 				var i, key, j,
 					stack = cacheManager.cacheStack,
@@ -213,6 +220,7 @@ module SpeedShifter.Services {
 						try{
 							if (stack[j].private_cache.isInvalid(key, now)) {
 								storage.remove(key);
+								i--;
 								count++;
 								break;
 							}
@@ -236,6 +244,7 @@ module SpeedShifter.Services {
 							try{
 								if (stack[j].private_cache.isCritical(key)) {
 									storage.remove(key);
+									i--;
 									count++;
 									break;
 								}
@@ -259,6 +268,7 @@ module SpeedShifter.Services {
 						try{
 							if (stack[j].private_cache.isBelongs(key)) {
 								storage.remove(key);
+								i--;
 								count++;
 								break;
 							}
@@ -272,7 +282,7 @@ module SpeedShifter.Services {
 				cacheManager.clearInterval = $interval(cacheManager.cleanStorage, time);
 			};
 			cacheManager.setClearInterval(provider.defOptions.cleanTimeout);
-			setTimeout(cacheManager.cleanStorage, 10*1000); // try to clean old values
+			cacheManager.cleanStorage(10*1000); // try to clean old values
 
 			if (!_localStorage_supported) {
 				$log.error('LocalStorage is not supported');
@@ -289,7 +299,7 @@ module SpeedShifter.Services {
 					localDep = <{[name:string]: ILocalStorageDepend}>{},
 					allDep = [localDep, globalDep],
 					private_me = <ILocalStoragePrivateObject> {},
-					storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE, "gi"),
+					storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE + ".*", "i"),
 					_options;
 
 				me.setOptions = function(_options_:ILocalStorageOptions) {
@@ -327,7 +337,7 @@ module SpeedShifter.Services {
 						storage.set(propertyName, item);
 					} catch (e) {
 						$log.log("localStorage LIMIT REACHED: (" + e + ")");
-						setTimeout(cacheManager.cleanOnStorageOverflow, 0);
+						$timeout(cacheManager.cleanOnStorageOverflow, 0);
 					}
 				};
 
@@ -344,6 +354,7 @@ module SpeedShifter.Services {
 						key = _localStorage.key(i);
 						if (private_me.isBelongs(key)) {
 							storage.remove(key);
+							i--;
 						}
 					}
 				};
@@ -355,10 +366,10 @@ module SpeedShifter.Services {
 				me.setDependence = function(dep: ILocalStorageDepend, global?: boolean) {
 					if (global) {
 						globalDep[dep.name] = dep;
-						cacheManager.cleanStorage();
+						cacheManager.cleanStorage(5*1000); // no need to remove it immediately
 					} else {
 						localDep[dep.name] = dep;
-						private_me.cleanStorage();
+						private_me.cleanStorage(5*1000); // no need to remove it immediately
 					}
 				};
 
@@ -371,7 +382,7 @@ module SpeedShifter.Services {
 								name: name,
 								value: val
 							};
-						cacheManager.cleanStorage();
+						cacheManager.cleanStorage(5*1000);
 					} else {
 						if (localDep[name])
 							localDep[name].value = val;
@@ -380,14 +391,17 @@ module SpeedShifter.Services {
 								name: name,
 								value: val
 							};
-						private_me.cleanStorage();
+						private_me.cleanStorage(5*1000);
 					}
 				};
 
-				private_me.cleanStorage = function(dep_name?: string) {
+				private_me.cleanStorage = function(delay?:number, dep_name?: string) {
 					if (!_localStorage_supported) return;
 
-					console.error("cleanStorage", cacheId);
+					if (angular.isDefined(delay) && angular.isNumber(delay)) {
+						$timeout(private_me.cleanStorage, delay);
+						return;
+					}
 
 					var i, key,
 						count = 0,
@@ -396,6 +410,7 @@ module SpeedShifter.Services {
 						key = _localStorage.key(i);
 						if (private_me.isInvalid(key, now)) {
 							storage.remove(key);
+							i--;
 						}
 					}
 					return count;

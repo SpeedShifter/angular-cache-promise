@@ -42,6 +42,10 @@ describe('angular-localStorage-cache:', function(){
 				.toBe(true);
 			expect(SpeedShifter.Services.LocalStorageHelpers.compare(globalDepStorage["compare"], {a: 4, b: 1, c: 2}))
 				.toBe(false);
+			expect(SpeedShifter.Services.LocalStorageHelpers.compare({name: "c", value: {a: 1, b: 2, c: [1, 2, 3]}}, {a: 1, b: 2, c: [1, 2, 3]}))
+				.toBe(true);
+			expect(SpeedShifter.Services.LocalStorageHelpers.compare({name: "c", value: {a: 1, b: 2, c: [1, 2]}}, {a: 1, b: 2, c: [1, 2, 3]}))
+				.toBe(false);
 		});
 
 		it('isDependentFailed', function(){
@@ -75,10 +79,10 @@ describe('angular-localStorage-cache:', function(){
 				.toBe(false);
 
 			expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, ["a"], [depStorage, globalDepStorage]))
-				.toBe(false);
+				.toBe(true); // dep "a" is required, but not defined in current val
 
 			expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({"a": 1}, ["a"], [depStorage, globalDepStorage]))
-				.toBe(true);
+				.toBe(true); // dep "a" doens't defined in depStorages
 
 			expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, ["userId"], [depStorage, globalDepStorage]))
 				.toBe(true);
@@ -229,19 +233,339 @@ describe('angular-localStorage-cache:', function(){
 				expect(storage.remove).toBeDefined();
 				expect(storage.getLocalStorageKey).toBeDefined();
 			});
+
 			it('not setted value, should be undefined', function () {
 				expect(storage.get("val")).toBeNull(); // before set
 			});
+
 			it('after set, get should return same value', function () {
 				expect(storage.get("val")).toBeNull();
 				expect(storage.set("val", val)).toBeUndefined();
-				expect(storage.get("val")).toEqual({b:2, a:1});
+				expect(storage.get("val")).toEqual(val);
 
 				expect($window.localStorage.getItem(storage.getLocalStorageKey("val"))).toBeDefined();
 			});
+
 			it('hardcore $window.localStorage.clear should remove all items', function () {
 				$window.localStorage.clear();
 				expect($window.localStorage.getItem(storage.getLocalStorageKey("val"))).toBeNull();
+			});
+
+			it('remove should remove one item', function () {
+				storage.set("val", val);
+				expect(storage.get("val")).toEqual(val);
+
+				storage.set("val2", val);
+				expect(storage.get("val2")).toEqual(val);
+
+				storage.remove("val2");
+
+				expect(storage.get("val2")).toBeNull(); // no item returned
+				expect($window.localStorage.getItem(storage.getLocalStorageKey("val2"))).toBeNull(); // no item is storage itself
+			});
+
+			it('clear should remove bunch of items of specific storage object, other should be unaffected', function () {
+				var storage2 = localStorage("localStorage2", <SpeedShifter.Services.ILocalStorageOptions>{});
+
+				storage.set("val", val);
+				storage.set("val2", val);
+				expect(storage.get("val")).toEqual(val);
+				expect(storage.get("val2")).toEqual(val);
+
+				var val2 = {c: 1, d: 2},
+					val3 = 1,
+					val4 = 0;
+				storage2.set("val", val2);
+				storage2.set("val2", val2);
+				storage2.set("val3", val3);
+				storage2.set("val4", val4);
+				expect(storage2.get("val")).toEqual(val2);
+				expect(storage2.get("val2")).toEqual(val2);
+				expect(storage2.get("val3")).toEqual(val3);
+				expect(storage2.get("val4")).toEqual(val4);
+
+				storage2.clear();
+
+				// all items from storage2 are removed
+				expect(storage2.get("val")).toBeNull();
+				expect(storage2.get("val2")).toBeNull();
+				expect(storage2.get("val3")).toBeNull();
+				expect(storage2.get("val4")).toBeNull();
+
+				// no items from storage are removed
+				expect(storage.get("val")).toEqual(val);
+				expect(storage.get("val2")).toEqual(val);
+			});
+
+			it('clearStorage should remove all bunches of items, but don\'t affect other localStorage items', function () {
+				var storage2 = localStorage("localStorage2", <SpeedShifter.Services.ILocalStorageOptions>{});
+
+				$window.localStorage.setItem("other item", "other item");
+
+				storage.set("val", val);
+				storage.set("val2", val);
+				expect(storage.get("val")).toEqual(val);
+				expect(storage.get("val2")).toEqual(val);
+
+				var val2 = {c: 1, d: 2},
+					val3 = 1,
+					val4 = 0;
+				storage2.set("val", val2);
+				storage2.set("val2", val2);
+				storage2.set("val3", val3);
+				storage2.set("val4", val4);
+				expect(storage2.get("val")).toEqual(val2);
+				expect(storage2.get("val2")).toEqual(val2);
+				expect(storage2.get("val3")).toEqual(val3);
+				expect(storage2.get("val4")).toEqual(val4);
+
+				storage2.clearStorage();
+
+				// all items from storage2 are removed
+				expect(storage2.get("val")).toBeNull();
+				expect(storage2.get("val2")).toBeNull();
+				expect(storage2.get("val3")).toBeNull();
+				expect(storage2.get("val4")).toBeNull();
+
+				// no items from storage are removed
+				expect(storage.get("val")).toBeNull();
+				expect(storage.get("val2")).toBeNull();
+
+				// other items is still here
+				expect($window.localStorage.getItem("other item")).toEqual("other item");
+			});
+
+			it('storage with same name is same storage', function () {
+				var storage2 = localStorage("localStorage", <SpeedShifter.Services.ILocalStorageOptions>{});
+
+				expect(storage2).toBe(storage);
+			});
+		});
+		describe('localStorage: Dependency', function () {
+			var storage: SpeedShifter.Services.ILocalStorageObject,
+				val,
+				userId = "12345",
+				version = "1.0";
+			beforeEach(function () {
+				$window.localStorage.clear();
+				storage = localStorage("localStorage", <SpeedShifter.Services.ILocalStorageOptions>{
+					dependent: ["userId", "version"]
+				});
+				val = {a:1, b:2};
+			});
+
+			it('if dependency values don\'t set, get should return null', function () {
+				expect(storage.get("val")).toBeNull();
+				storage.set("val", val);
+				expect(storage.get("val")).toBeNull();
+			});
+
+			describe('local dependecies:', function () {
+				beforeEach(function () {
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "userId",
+						value: userId
+					});
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "version",
+						value: version
+					});
+				});
+				it('when deps are set, storage should work as normal', function () {
+					expect(storage.get("val")).toBeNull();
+					storage.set("val", val);
+					expect(storage.get("val")).toEqual(val);
+				});
+
+				it('when any dep is changed, values depend on it should be failed', function () {
+					expect(storage.get("val")).toBeNull();
+					storage.set("val", val);
+					expect(storage.get("val")).toEqual(val);
+
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "version",
+						value: "2.0"
+					});
+
+					expect(storage.get("val")).toBeNull();
+				});
+
+				it('setDependenceVal should behave same as setDependence', function () {
+					expect(storage.get("val")).toBeNull();
+					storage.set("val", val);
+					expect(storage.get("val")).toEqual(val);
+
+					storage.setDependenceVal("version", "2.0");
+
+					expect(storage.get("val")).toBeNull();
+
+					storage.setDependenceVal("version", version);
+
+					expect(storage.get("val")).toBeNull(); // still null, because item was removed from storage
+
+					storage.set("val", val);
+					expect(storage.get("val")).toEqual(val); // after set it should still work normal
+
+					storage.setDependenceVal("version", "2.0"); // shouldn't clean storage immediately
+					storage.setDependenceVal("version", version);
+
+					expect(storage.get("val")).toEqual(val);
+				});
+			});
+			describe('global dependecies:', function () {
+				beforeEach(function () {
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "userId",
+						value: userId
+					}, true);
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "version",
+						value: version
+					}, true);
+				});
+				it('when deps are set, storage should work as normal', function () {
+					expect(storage.get("val")).toBeNull();
+					storage.set("val", val);
+					expect(storage.get("val")).toEqual(val);
+				});
+
+				it('when any dep is changed, values depend on it should be failed', function () {
+					expect(storage.get("val")).toBeNull();
+					storage.set("val", val);
+					expect(storage.get("val")).toEqual(val);
+
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "version",
+						value: "2.0"
+					}, true);
+
+					expect(storage.get("val")).toBeNull();
+				});
+			});
+			describe('global/local dependecies:', function () {
+				it('should fail, when local dep is undefined', function () {
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "userId",
+						value: userId
+					}, true);
+
+					expect(storage.get("val")).toBeNull();
+					storage.set("val", val);
+					expect(storage.get("val")).toBeNull(); // "version" dep is missing
+				});
+				it('global+local should work as normal', function () {
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "userId",
+						value: userId
+					}, true);
+					storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+						name: "version",
+						value: version
+					});
+
+					expect(storage.get("val")).toBeNull();
+					storage.set("val", val);
+					expect(storage.get("val")).toEqual(val);
+				});
+				describe('global+local', function () {
+					beforeEach(function () {
+						storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+							name: "userId",
+							value: userId
+						}, true);
+						storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+							name: "version",
+							value: version
+						});
+					});
+					it('second storage should inherit global dependency', function () {
+						var storage2 = localStorage("localStorage2", <SpeedShifter.Services.ILocalStorageOptions>{
+							dependent: ["userId"]
+						});
+
+						expect(storage2.get("val")).toBeNull();
+						storage2.set("val", val);
+						expect(storage2.get("val")).toEqual(val); // depends only on global dependency
+					});
+					it('second storage should inherit global dependency, but not local', function () {
+						var storage2 = localStorage("localStorage2", <SpeedShifter.Services.ILocalStorageOptions>{
+							dependent: ["userId", "version"]
+						});
+
+						expect(storage2.get("val")).toBeNull();
+						storage2.set("val", val);
+						expect(storage2.get("val")).toBeNull(); // should fail, because "version" not setted for this storage
+					});
+					it('storage with same name is same', function () {
+						var storage2 = localStorage("localStorage", <SpeedShifter.Services.ILocalStorageOptions>{
+							dependent: ["userId", "version"]
+						});
+
+						expect(storage2).toBe(storage);
+
+						expect(storage2.get("val")).toBeNull();
+						storage2.set("val", val);
+						expect(storage2.get("val")).toEqual(val); // because it is same as storage, so "version" was set
+					});
+					it('changing local dep shouldn\'t affect other storages', function () {
+						var storage2 = localStorage("localStorage2", <SpeedShifter.Services.ILocalStorageOptions>{
+							dependent: ["userId", "version"]
+						});
+
+						var version2 = "2.0";
+						storage2.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+							name: "version",
+							value: version2
+						}, true);
+
+						storage2.set("val", val);
+						expect(storage2.get("val")).toEqual(val);
+
+						storage.set("val", val);
+						expect(storage.get("val")).toEqual(val);
+
+						storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+							name: "version",
+							value: version2
+						});
+
+						expect(storage.get("val")).toBeNull(); // because local "version" was changed
+						expect(storage2.get("val")).toEqual(val); // because global "version" wasn't
+					});
+
+					it('changing global dep should affect only storages, that doesn\'t have local copies', function () {
+						var storage2 = localStorage("localStorage2", <SpeedShifter.Services.ILocalStorageOptions>{
+							dependent: ["userId", "version"]
+						});
+
+						var version2 = "2.0";
+						storage2.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+							name: "version",
+							value: version2
+						}, true);
+
+						storage2.set("val", val);
+						expect(storage2.get("val")).toEqual(val);
+
+						storage.set("val", val);
+						expect(storage.get("val")).toEqual(val);
+
+						storage2.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+							name: "version",
+							value: version
+						}, true);
+
+						expect(storage.get("val")).toEqual(val);
+						expect(storage2.get("val")).toBeNull();
+
+						storage.setDependence(<SpeedShifter.Services.ILocalStorageDepend>{
+							name: "version",
+							value: version2
+						});
+
+						expect(storage.get("val")).toBeNull(); // because local "version" was changed
+					});
+				});
 			});
 		});
 	});

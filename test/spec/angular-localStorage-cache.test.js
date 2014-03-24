@@ -29,6 +29,8 @@ describe('angular-localStorage-cache:', function () {
             expect(SpeedShifter.Services.LocalStorageHelpers.compare(globalDepStorage["compare"], globalDepStorage["compare"].value)).toBe(true);
             expect(SpeedShifter.Services.LocalStorageHelpers.compare(globalDepStorage["compare"], { a: 4, b: 0, c: 2 })).toBe(true);
             expect(SpeedShifter.Services.LocalStorageHelpers.compare(globalDepStorage["compare"], { a: 4, b: 1, c: 2 })).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.compare({ name: "c", value: { a: 1, b: 2, c: [1, 2, 3] } }, { a: 1, b: 2, c: [1, 2, 3] })).toBe(true);
+            expect(SpeedShifter.Services.LocalStorageHelpers.compare({ name: "c", value: { a: 1, b: 2, c: [1, 2] } }, { a: 1, b: 2, c: [1, 2, 3] })).toBe(false);
         });
 
         it('isDependentFailed', function () {
@@ -54,7 +56,7 @@ describe('angular-localStorage-cache:', function () {
             expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, null, null)).toBe(false);
             expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, undefined, undefined)).toBe(false);
 
-            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, ["a"], [depStorage, globalDepStorage])).toBe(false);
+            expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({}, ["a"], [depStorage, globalDepStorage])).toBe(true);
 
             expect(SpeedShifter.Services.LocalStorageHelpers.isDependentFailed({ "a": 1 }, ["a"], [depStorage, globalDepStorage])).toBe(true);
 
@@ -169,19 +171,327 @@ describe('angular-localStorage-cache:', function () {
                 expect(storage.remove).toBeDefined();
                 expect(storage.getLocalStorageKey).toBeDefined();
             });
+
             it('not setted value, should be undefined', function () {
                 expect(storage.get("val")).toBeNull();
             });
+
             it('after set, get should return same value', function () {
                 expect(storage.get("val")).toBeNull();
                 expect(storage.set("val", val)).toBeUndefined();
-                expect(storage.get("val")).toEqual({ b: 2, a: 1 });
+                expect(storage.get("val")).toEqual(val);
 
                 expect($window.localStorage.getItem(storage.getLocalStorageKey("val"))).toBeDefined();
             });
+
             it('hardcore $window.localStorage.clear should remove all items', function () {
                 $window.localStorage.clear();
                 expect($window.localStorage.getItem(storage.getLocalStorageKey("val"))).toBeNull();
+            });
+
+            it('remove should remove one item', function () {
+                storage.set("val", val);
+                expect(storage.get("val")).toEqual(val);
+
+                storage.set("val2", val);
+                expect(storage.get("val2")).toEqual(val);
+
+                storage.remove("val2");
+
+                expect(storage.get("val2")).toBeNull();
+                expect($window.localStorage.getItem(storage.getLocalStorageKey("val2"))).toBeNull();
+            });
+
+            it('clear should remove bunch of items of specific storage object, other should be unaffected', function () {
+                var storage2 = localStorage("localStorage2", {});
+
+                storage.set("val", val);
+                storage.set("val2", val);
+                expect(storage.get("val")).toEqual(val);
+                expect(storage.get("val2")).toEqual(val);
+
+                var val2 = { c: 1, d: 2 }, val3 = 1, val4 = 0;
+                storage2.set("val", val2);
+                storage2.set("val2", val2);
+                storage2.set("val3", val3);
+                storage2.set("val4", val4);
+                expect(storage2.get("val")).toEqual(val2);
+                expect(storage2.get("val2")).toEqual(val2);
+                expect(storage2.get("val3")).toEqual(val3);
+                expect(storage2.get("val4")).toEqual(val4);
+
+                storage2.clear();
+
+                expect(storage2.get("val")).toBeNull();
+                expect(storage2.get("val2")).toBeNull();
+                expect(storage2.get("val3")).toBeNull();
+                expect(storage2.get("val4")).toBeNull();
+
+                expect(storage.get("val")).toEqual(val);
+                expect(storage.get("val2")).toEqual(val);
+            });
+
+            it('clearStorage should remove all bunches of items, but don\'t affect other localStorage items', function () {
+                var storage2 = localStorage("localStorage2", {});
+
+                $window.localStorage.setItem("other item", "other item");
+
+                storage.set("val", val);
+                storage.set("val2", val);
+                expect(storage.get("val")).toEqual(val);
+                expect(storage.get("val2")).toEqual(val);
+
+                var val2 = { c: 1, d: 2 }, val3 = 1, val4 = 0;
+                storage2.set("val", val2);
+                storage2.set("val2", val2);
+                storage2.set("val3", val3);
+                storage2.set("val4", val4);
+                expect(storage2.get("val")).toEqual(val2);
+                expect(storage2.get("val2")).toEqual(val2);
+                expect(storage2.get("val3")).toEqual(val3);
+                expect(storage2.get("val4")).toEqual(val4);
+
+                storage2.clearStorage();
+
+                expect(storage2.get("val")).toBeNull();
+                expect(storage2.get("val2")).toBeNull();
+                expect(storage2.get("val3")).toBeNull();
+                expect(storage2.get("val4")).toBeNull();
+
+                expect(storage.get("val")).toBeNull();
+                expect(storage.get("val2")).toBeNull();
+
+                expect($window.localStorage.getItem("other item")).toEqual("other item");
+            });
+
+            it('storage with same name is same storage', function () {
+                var storage2 = localStorage("localStorage", {});
+
+                expect(storage2).toBe(storage);
+            });
+        });
+        describe('localStorage: Dependency', function () {
+            var storage, val, userId = "12345", version = "1.0";
+            beforeEach(function () {
+                $window.localStorage.clear();
+                storage = localStorage("localStorage", {
+                    dependent: ["userId", "version"]
+                });
+                val = { a: 1, b: 2 };
+            });
+
+            it('if dependency values don\'t set, get should return null', function () {
+                expect(storage.get("val")).toBeNull();
+                storage.set("val", val);
+                expect(storage.get("val")).toBeNull();
+            });
+
+            describe('local dependecies:', function () {
+                beforeEach(function () {
+                    storage.setDependence({
+                        name: "userId",
+                        value: userId
+                    });
+                    storage.setDependence({
+                        name: "version",
+                        value: version
+                    });
+                });
+                it('when deps are set, storage should work as normal', function () {
+                    expect(storage.get("val")).toBeNull();
+                    storage.set("val", val);
+                    expect(storage.get("val")).toEqual(val);
+                });
+
+                it('when any dep is changed, values depend on it should be failed', function () {
+                    expect(storage.get("val")).toBeNull();
+                    storage.set("val", val);
+                    expect(storage.get("val")).toEqual(val);
+
+                    storage.setDependence({
+                        name: "version",
+                        value: "2.0"
+                    });
+
+                    expect(storage.get("val")).toBeNull();
+                });
+
+                it('setDependenceVal should behave same as setDependence', function () {
+                    expect(storage.get("val")).toBeNull();
+                    storage.set("val", val);
+                    expect(storage.get("val")).toEqual(val);
+
+                    storage.setDependenceVal("version", "2.0");
+
+                    expect(storage.get("val")).toBeNull();
+
+                    storage.setDependenceVal("version", version);
+
+                    expect(storage.get("val")).toBeNull();
+
+                    storage.set("val", val);
+                    expect(storage.get("val")).toEqual(val);
+
+                    storage.setDependenceVal("version", "2.0");
+                    storage.setDependenceVal("version", version);
+
+                    expect(storage.get("val")).toEqual(val);
+                });
+            });
+            describe('global dependecies:', function () {
+                beforeEach(function () {
+                    storage.setDependence({
+                        name: "userId",
+                        value: userId
+                    }, true);
+                    storage.setDependence({
+                        name: "version",
+                        value: version
+                    }, true);
+                });
+                it('when deps are set, storage should work as normal', function () {
+                    expect(storage.get("val")).toBeNull();
+                    storage.set("val", val);
+                    expect(storage.get("val")).toEqual(val);
+                });
+
+                it('when any dep is changed, values depend on it should be failed', function () {
+                    expect(storage.get("val")).toBeNull();
+                    storage.set("val", val);
+                    expect(storage.get("val")).toEqual(val);
+
+                    storage.setDependence({
+                        name: "version",
+                        value: "2.0"
+                    }, true);
+
+                    expect(storage.get("val")).toBeNull();
+                });
+            });
+            describe('global/local dependecies:', function () {
+                it('should fail, when local dep is undefined', function () {
+                    storage.setDependence({
+                        name: "userId",
+                        value: userId
+                    }, true);
+
+                    expect(storage.get("val")).toBeNull();
+                    storage.set("val", val);
+                    expect(storage.get("val")).toBeNull();
+                });
+                it('global+local should work as normal', function () {
+                    storage.setDependence({
+                        name: "userId",
+                        value: userId
+                    }, true);
+                    storage.setDependence({
+                        name: "version",
+                        value: version
+                    });
+
+                    expect(storage.get("val")).toBeNull();
+                    storage.set("val", val);
+                    expect(storage.get("val")).toEqual(val);
+                });
+                describe('global+local', function () {
+                    beforeEach(function () {
+                        storage.setDependence({
+                            name: "userId",
+                            value: userId
+                        }, true);
+                        storage.setDependence({
+                            name: "version",
+                            value: version
+                        });
+                    });
+                    it('second storage should inherit global dependency', function () {
+                        var storage2 = localStorage("localStorage2", {
+                            dependent: ["userId"]
+                        });
+
+                        expect(storage2.get("val")).toBeNull();
+                        storage2.set("val", val);
+                        expect(storage2.get("val")).toEqual(val);
+                    });
+                    it('second storage should inherit global dependency, but not local', function () {
+                        var storage2 = localStorage("localStorage2", {
+                            dependent: ["userId", "version"]
+                        });
+
+                        expect(storage2.get("val")).toBeNull();
+                        storage2.set("val", val);
+                        expect(storage2.get("val")).toBeNull();
+                    });
+                    it('storage with same name is same', function () {
+                        var storage2 = localStorage("localStorage", {
+                            dependent: ["userId", "version"]
+                        });
+
+                        expect(storage2).toBe(storage);
+
+                        expect(storage2.get("val")).toBeNull();
+                        storage2.set("val", val);
+                        expect(storage2.get("val")).toEqual(val);
+                    });
+                    it('changing local dep shouldn\'t affect other storages', function () {
+                        var storage2 = localStorage("localStorage2", {
+                            dependent: ["userId", "version"]
+                        });
+
+                        var version2 = "2.0";
+                        storage2.setDependence({
+                            name: "version",
+                            value: version2
+                        }, true);
+
+                        storage2.set("val", val);
+                        expect(storage2.get("val")).toEqual(val);
+
+                        storage.set("val", val);
+                        expect(storage.get("val")).toEqual(val);
+
+                        storage.setDependence({
+                            name: "version",
+                            value: version2
+                        });
+
+                        expect(storage.get("val")).toBeNull();
+                        expect(storage2.get("val")).toEqual(val);
+                    });
+
+                    it('changing global dep should affect only storages, that doesn\'t have local copies', function () {
+                        var storage2 = localStorage("localStorage2", {
+                            dependent: ["userId", "version"]
+                        });
+
+                        var version2 = "2.0";
+                        storage2.setDependence({
+                            name: "version",
+                            value: version2
+                        }, true);
+
+                        storage2.set("val", val);
+                        expect(storage2.get("val")).toEqual(val);
+
+                        storage.set("val", val);
+                        expect(storage.get("val")).toEqual(val);
+
+                        storage2.setDependence({
+                            name: "version",
+                            value: version
+                        }, true);
+
+                        expect(storage.get("val")).toEqual(val);
+                        expect(storage2.get("val")).toBeNull();
+
+                        storage.setDependence({
+                            name: "version",
+                            value: version2
+                        });
+
+                        expect(storage.get("val")).toBeNull();
+                    });
+                });
             });
         });
     });

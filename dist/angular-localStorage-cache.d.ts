@@ -22,7 +22,7 @@ declare module SpeedShifter.Services {
         getLocalStorageKey(valName: string): any;
         get(valName: string): any;
         set(valName: string, val: any, updated?: number): any;
-        remove(valName: string, limit?: number): any;
+        remove(valName: string): any;
         clear(): any;
         clearStorage(): any;
         setDependence(dep: ILocalStorageDepend, global?: boolean): any;

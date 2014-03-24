@@ -5,7 +5,7 @@ var SpeedShifter;
             function LocalStorageHelpers() {
             }
             LocalStorageHelpers.compare = function (dep, val) {
-                return dep && ((dep.comparator && dep.comparator(dep.value, val)) || (dep.value === val));
+                return dep && ((dep.comparator && dep.comparator(dep.value, val)) || (dep.value === val) || (angular.isObject(dep.value) && angular.equals(dep.value, val)));
             };
             LocalStorageHelpers.getDepend = function (name, depStorages) {
                 for (var i = 0; depStorages && i < depStorages.length; i++) {
@@ -24,7 +24,7 @@ var SpeedShifter;
                 if (deps && deps.length > 0) {
                     for (i = 0; i < deps.length; i++) {
                         depend = LocalStorageHelpers.getDepend(deps[i], depStorages);
-                        if ((depend && !LocalStorageHelpers.compare(depend, vals[deps[i]])) || (!depend && angular.isDefined(vals[deps[i]]))) {
+                        if (!depend || angular.isUndefined(vals[deps[i]]) || (depend && !LocalStorageHelpers.compare(depend, vals[deps[i]]))) {
                             return true;
                         }
                     }
@@ -75,7 +75,7 @@ var SpeedShifter;
             provider.defOptions = {};
 
             this.$get = [
-                '$log', '$window', '$interval', function ($log, $window, $interval) {
+                '$log', '$window', '$interval', '$timeout', function ($log, $window, $interval, $timeout) {
                     var _localStorage = ((typeof $window.localStorage === 'undefined') ? undefined : $window.localStorage), _localStorage_supported = !(typeof _localStorage === 'undefined' || typeof JSON === 'undefined'), storage = {
                         get: function (key) {
                             if (!_localStorage_supported)
@@ -131,9 +131,14 @@ var SpeedShifter;
                     cacheManager.unregisterCacheObject = function (id) {
                         delete cacheManager.cacheStack[id];
                     };
-                    cacheManager.cleanStorage = function () {
+                    cacheManager.cleanStorage = function (delay) {
                         if (!_localStorage_supported)
                             return;
+
+                        if (angular.isDefined(delay) && angular.isNumber(delay)) {
+                            $timeout(cacheManager.cleanStorage, delay);
+                            return;
+                        }
 
                         var i, key, j, stack = cacheManager.cacheStack, count = 0, now = (new Date()).getTime();
                         for (i = 0; i < _localStorage.length; i++) {
@@ -142,6 +147,7 @@ var SpeedShifter;
                                 try  {
                                     if (stack[j].private_cache.isInvalid(key, now)) {
                                         storage.remove(key);
+                                        i--;
                                         count++;
                                         break;
                                     }
@@ -165,6 +171,7 @@ var SpeedShifter;
                                     try  {
                                         if (stack[j].private_cache.isCritical(key)) {
                                             storage.remove(key);
+                                            i--;
                                             count++;
                                             break;
                                         }
@@ -188,6 +195,7 @@ var SpeedShifter;
                                 try  {
                                     if (stack[j].private_cache.isBelongs(key)) {
                                         storage.remove(key);
+                                        i--;
                                         count++;
                                         break;
                                     }
@@ -203,7 +211,7 @@ var SpeedShifter;
                         cacheManager.clearInterval = $interval(cacheManager.cleanStorage, time);
                     };
                     cacheManager.setClearInterval(provider.defOptions.cleanTimeout);
-                    setTimeout(cacheManager.cleanStorage, 10 * 1000);
+                    cacheManager.cleanStorage(10 * 1000);
 
                     if (!_localStorage_supported) {
                         $log.error('LocalStorage is not supported');
@@ -216,7 +224,7 @@ var SpeedShifter;
                             return cacheManager.getCacheObject(storageValName);
                         }
 
-                        var me = {}, localDep = {}, allDep = [localDep, globalDep], private_me = {}, storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE, "gi"), _options;
+                        var me = {}, localDep = {}, allDep = [localDep, globalDep], private_me = {}, storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE + ".*", "i"), _options;
 
                         me.setOptions = function (_options_) {
                             _options = angular.extend({}, provider.defOptions, _options_);
@@ -251,7 +259,7 @@ var SpeedShifter;
                                 storage.set(propertyName, item);
                             } catch (e) {
                                 $log.log("localStorage LIMIT REACHED: (" + e + ")");
-                                setTimeout(cacheManager.cleanOnStorageOverflow, 0);
+                                $timeout(cacheManager.cleanOnStorageOverflow, 0);
                             }
                         };
 
@@ -269,6 +277,7 @@ var SpeedShifter;
                                 key = _localStorage.key(i);
                                 if (private_me.isBelongs(key)) {
                                     storage.remove(key);
+                                    i--;
                                 }
                             }
                         };
@@ -280,10 +289,10 @@ var SpeedShifter;
                         me.setDependence = function (dep, global) {
                             if (global) {
                                 globalDep[dep.name] = dep;
-                                cacheManager.cleanStorage();
+                                cacheManager.cleanStorage(5 * 1000);
                             } else {
                                 localDep[dep.name] = dep;
-                                private_me.cleanStorage();
+                                private_me.cleanStorage(5 * 1000);
                             }
                         };
 
@@ -296,7 +305,7 @@ var SpeedShifter;
                                         name: name,
                                         value: val
                                     };
-                                cacheManager.cleanStorage();
+                                cacheManager.cleanStorage(5 * 1000);
                             } else {
                                 if (localDep[name])
                                     localDep[name].value = val;
@@ -305,21 +314,25 @@ var SpeedShifter;
                                         name: name,
                                         value: val
                                     };
-                                private_me.cleanStorage();
+                                private_me.cleanStorage(5 * 1000);
                             }
                         };
 
-                        private_me.cleanStorage = function (dep_name) {
+                        private_me.cleanStorage = function (delay, dep_name) {
                             if (!_localStorage_supported)
                                 return;
 
-                            console.error("cleanStorage", cacheId);
+                            if (angular.isDefined(delay) && angular.isNumber(delay)) {
+                                $timeout(private_me.cleanStorage, delay);
+                                return;
+                            }
 
                             var i, key, count = 0, now = (new Date()).getTime();
                             for (i = 0; i < _localStorage.length; i++) {
                                 key = _localStorage.key(i);
                                 if (private_me.isInvalid(key, now)) {
                                     storage.remove(key);
+                                    i--;
                                 }
                             }
                             return count;
