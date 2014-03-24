@@ -6,9 +6,10 @@ declare module SpeedShifter.Services {
         set(key: string, promise: ng.IPromise<any>): ng.IPromise<any>;
         remove(key: string): any;
         removeAll(): any;
+        setOptions(options?: ICachePromiseOptions): any;
     }
     interface ICachePromiseService {
-        (cacheId: string, optionsMap?: ICachePromiseOptions): ICachePromiseObject;
+        (cacheId: string, options?: ICachePromiseOptions): ICachePromiseObject;
     }
     interface ICachePromiseOptions {
         capacity?: number;
@@ -19,7 +20,7 @@ declare module SpeedShifter.Services {
         saveFail?: boolean;
     }
     interface ICachePromiseDefResolver<T> {
-        (...values: any[]): T;
+        (values: any[], failed?: boolean): T;
     }
     interface ICachePromiseProvider {
         setOptions(options: ICachePromiseOptions): ICachePromiseOptions;

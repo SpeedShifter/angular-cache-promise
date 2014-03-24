@@ -4,32 +4,17 @@ var SpeedShifter;
         'use strict';
 
         Services.CachePromiseProvider = function () {
-            var serviceProvider = this, defOptions = {
-                capacity: null,
-                timeout: null,
-                saveFail: false,
-                dontSaveResult: false,
-                defResolver: null,
-                JQPromise: false
-            }, cacheStore = {};
+            var serviceProvider = this, defOptions = {}, cacheStore = {};
 
             this.$get = [
                 '$q', '$cacheFactory', function ($q, $cacheFactory) {
-                    var ngDefResolver = function () {
-                        var values = [];
-                        for (var _i = 0; _i < (arguments.length - 0); _i++) {
-                            values[_i] = arguments[_i + 0];
-                        }
+                    var ngDefResolver = function (values, failed) {
                         var def = $q.defer();
-                        def.resolve.apply(this, values);
+                        (!failed ? def.resolve : def.reject).apply(this, values);
                         return def.promise;
-                    }, $DefResolver = function () {
-                        var values = [];
-                        for (var _i = 0; _i < (arguments.length - 0); _i++) {
-                            values[_i] = arguments[_i + 0];
-                        }
+                    }, $DefResolver = function (values, failed) {
                         var def = $.Deferred();
-                        def.resolve.apply(this, values);
+                        (!failed ? def.resolve : def.reject).apply(this, values);
                         return def.promise();
                     };
 
@@ -37,14 +22,19 @@ var SpeedShifter;
                         if (cacheStore[cacheId])
                             return cacheStore[cacheId];
 
-                        var me = cacheStore[cacheId] = {}, opt = angular.extend({}, defOptions, options), cache = $cacheFactory(cacheId, options);
+                        var me = cacheStore[cacheId] = {}, opt, cache = $cacheFactory(cacheId, options);
 
-                        if (!opt.defResolver || !angular.isFunction(opt.defResolver)) {
-                            if (opt.JQPromise)
-                                opt.defResolver = $DefResolver;
-                            else
-                                opt.defResolver = ngDefResolver;
-                        }
+                        me.setOptions = function (_options) {
+                            opt = angular.extend({}, defOptions, _options);
+
+                            if (!opt.defResolver || !angular.isFunction(opt.defResolver)) {
+                                if (opt.JQPromise)
+                                    opt.defResolver = $DefResolver;
+                                else
+                                    opt.defResolver = ngDefResolver;
+                            }
+                        };
+                        me.setOptions(options);
 
                         me.get = function (key, timeout) {
                             var cached = cache.get(key), now = (new Date()).getTime();
@@ -53,7 +43,7 @@ var SpeedShifter;
                             }
                             if (cached) {
                                 if ((!timeout || (now - cached.time < timeout)) && (!opt.timeout || (now - cached.time < opt.timeout))) {
-                                    return opt.defResolver.apply(this, cached.data);
+                                    return opt.defResolver(cached.data, cached.failed);
                                 } else
                                     cache.remove(key);
                             }
@@ -75,11 +65,23 @@ var SpeedShifter;
                                 if (opt.dontSaveResult || opt.timeout === 0) {
                                     cache.remove(key);
                                 }
-                            };
-                            promise.then(fnc, opt.saveFail ? fnc : function () {
+                            }, fail_fnc = opt.saveFail ? function () {
+                                var values = [];
+                                for (var _i = 0; _i < (arguments.length - 0); _i++) {
+                                    values[_i] = arguments[_i + 0];
+                                }
+                                cached_obj.failed = true;
+                                cached_obj.data = values;
+                                cached_obj.time = (new Date()).getTime();
+                                delete cached_obj.promise;
+                                if (opt.dontSaveResult || opt.timeout === 0) {
+                                    cache.remove(key);
+                                }
+                            } : function () {
                                 delete cached_obj.promise;
                                 cache.remove(key);
-                            });
+                            };
+                            promise.then(fnc, fail_fnc);
 
                             cache.put(key, cached_obj);
                             return promise;

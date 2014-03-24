@@ -21,8 +21,9 @@ describe('angular-cache-promise:', function () {
                 timeout: 10 * 1000
             });
             def = $q.defer();
-            val = 1;
             promise = def.promise;
+            val = 1;
+            result = undefined;
         });
 
         it('no cache to be undefined', function () {
@@ -88,6 +89,63 @@ describe('angular-cache-promise:', function () {
             expect(result2).toBe(val);
         });
     });
+    describe('cachePromise: saveFail:', function () {
+        var cache, def, promise, val, result;
+        beforeEach(function () {
+            cache = cachePromise("cache1", {
+                capacity: 100,
+                timeout: 10 * 1000,
+                saveFail: true
+            });
+            def = $q.defer();
+            promise = def.promise;
+            val = 1;
+            result = undefined;
+        });
+        it('when saveFail is true, after rejecting, cache.get("val") should still return promise, but already rejected with fail values', function () {
+            cache.set("val", promise);
+
+            def.reject(val);
+            $timeout.flush();
+
+            expect(result).toBeUndefined();
+            expect(cache.get("val")).not.toBeUndefined();
+
+            var result2;
+            cache.get("val").then(function (data) {
+                result = data;
+            }, function (data) {
+                result2 = data;
+            });
+
+            $timeout.flush();
+            expect(result).toBeUndefined();
+            expect(result2).toBe(val);
+            expect(cache.get("val")).not.toBeUndefined();
+        });
+        it('setOptions should change cache behavior', function () {
+            cache.setOptions({
+                saveFail: false
+            });
+
+            cache.set("val", promise);
+
+            var result2;
+            cache.get("val").then(function (data) {
+                result = data;
+            }, function (data) {
+                result2 = data;
+            });
+
+            def.reject(val);
+            $timeout.flush();
+
+            expect(result).toBeUndefined();
+            expect(result2).toBe(val);
+
+            expect(cache.get("val")).toBeUndefined();
+        });
+    });
     describe('cachePromise: timeouts:', function () {
         var cache, def, promise, val, result;
         beforeEach(inject(function (_cachePromise_) {
@@ -96,8 +154,9 @@ describe('angular-cache-promise:', function () {
                 timeout: 5 * 1000
             });
             def = $q.defer();
-            val = 1;
             promise = def.promise;
+            val = 1;
+            result = undefined;
         }));
 
         beforeEach(function () {
@@ -198,8 +257,9 @@ describe('angular-cache-promise:', function () {
                 JQPromise: true
             });
             def = $.Deferred();
-            val = 1;
             promise = def.promise();
+            val = 1;
+            result = undefined;
         }));
         it('no cache to be undefined', function () {
             expect(cache.get("val")).toBeUndefined();
@@ -248,8 +308,9 @@ describe('angular-cache-promise:', function () {
                 dontSaveResult: true
             });
             def = $q.defer();
-            val = 1;
             promise = def.promise;
+            val = 1;
+            result = undefined;
         });
         it('after resolving, cache value should be removed', function () {
             expect(cache.set("val", promise)).toEqual(promise);
@@ -277,13 +338,9 @@ describe('angular-cache-promise:', function () {
     describe('cachePromise: defResolver:', function () {
         var cache, def, promise, val, result, options = {
             capacity: 100,
-            defResolver: function () {
-                var values = [];
-                for (var _i = 0; _i < (arguments.length - 0); _i++) {
-                    values[_i] = arguments[_i + 0];
-                }
+            defResolver: function (values, failed) {
                 var def = $q.defer();
-                def.resolve.apply(this, values);
+                (!failed ? def.resolve : def.reject).apply(this, values);
                 return def.promise;
             }
         };
@@ -294,8 +351,9 @@ describe('angular-cache-promise:', function () {
             cache = cachePromise("cache2", options);
 
             def = $q.defer();
-            val = 1;
             promise = def.promise;
+            val = 1;
+            result = undefined;
         });
         it('new defResolver should be called instead of builtin', function () {
             expect(cache.set("val", promise)).toEqual(promise);
