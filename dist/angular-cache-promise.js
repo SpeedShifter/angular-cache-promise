@@ -47,7 +47,7 @@ var SpeedShifter;
                                 } else
                                     cache.remove(key);
                             }
-                            return undefined;
+                            return null;
                         };
                         me.set = function (key, promise) {
                             var cached_obj = {

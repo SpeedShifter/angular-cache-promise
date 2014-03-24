@@ -19,6 +19,7 @@ declare module SpeedShifter.Services {
         (cacheId: string, options?: ILocalStorageOptions): ILocalStorageObject;
     }
     interface ILocalStorageObject {
+        getLocalStorageKey(valName: string): any;
         get(valName: string): any;
         set(valName: string, val: any, updated?: number): any;
         remove(valName: string, limit?: number): any;
@@ -26,6 +27,7 @@ declare module SpeedShifter.Services {
         clearStorage(): any;
         setDependence(dep: ILocalStorageDepend, global?: boolean): any;
         setDependenceVal(name: string, val: any, global?: boolean): any;
+        setOptions(options: ILocalStorageOptions): any;
     }
     interface ILocalStorageItemWrapper {
         time?: number;

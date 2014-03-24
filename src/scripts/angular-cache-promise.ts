@@ -86,7 +86,7 @@ module SpeedShifter.Services {
 						} else
 							cache.remove(key);
 					}
-					return undefined;
+					return null;
 				};
 				me.set = function (key:string, promise:any) {
 					var cached_obj = <ICachePromisedObj>{

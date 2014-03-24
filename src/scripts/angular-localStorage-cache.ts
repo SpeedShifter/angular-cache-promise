@@ -24,6 +24,7 @@ module SpeedShifter.Services {
 	}
 
 	export interface ILocalStorageObject {
+		getLocalStorageKey(valName:string);
 		get(valName:string);
 		set(valName:string, val, updated?:number);
 		remove(valName:string, limit?:number);
@@ -31,6 +32,7 @@ module SpeedShifter.Services {
 		clearStorage(); // clear all storage totally, but only registered items
 		setDependence(dep: ILocalStorageDepend, global?: boolean);
 		setDependenceVal(name: string, val: any, global?: boolean);
+		setOptions(options:ILocalStorageOptions);
 	}
 
 	export interface ILocalStorageItemWrapper {
@@ -72,7 +74,7 @@ module SpeedShifter.Services {
 					return depStorages[i][name];
 				}
 			}
-			return undefined;
+			return null;
 		}
 		static isDependentFailed (vals: {[name: string]: any}, deps: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
 			if (!vals)
@@ -126,7 +128,7 @@ module SpeedShifter.Services {
 				if (c>0)
 					return deps;
 			}
-			return undefined;
+			return null;
 		}
 	}
 
@@ -137,7 +139,7 @@ module SpeedShifter.Services {
 			ITEMS_NAME_DELIMITER_REG_SAFE = "\\.",
 			DEF_CLEAN_INTERVAL = 5*60*1000;
 
-		provider.name = '';
+		provider.name = 'ngLocalStorage';
 		provider.defOptions = <ILocalStorageOptions>{};
 
 		this.$get = ['$log', '$window', '$interval', function ($log: ng.ILogService, $window: {localStorage: Storage}, $interval: ng.IIntervalService) {
@@ -283,19 +285,27 @@ module SpeedShifter.Services {
 					return cacheManager.getCacheObject(storageValName);
 				}
 
-				options = <ILocalStorageOptions>angular.extend({}, provider.defOptions, options);
-				var storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE, "gi");
-
 				var me = <ILocalStorageObject>{},
 					localDep = <{[name:string]: ILocalStorageDepend}>{},
 					allDep = [localDep, globalDep],
-					private_me = <ILocalStoragePrivateObject> {};
+					private_me = <ILocalStoragePrivateObject> {},
+					storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE, "gi"),
+					_options;
+
+				me.setOptions = function(_options_:ILocalStorageOptions) {
+					_options = <ILocalStorageOptions>angular.extend({}, provider.defOptions, _options_);
+				};
+				me.setOptions(options);
+
+				me.getLocalStorageKey = function(valName:string){
+					return storageValName + ITEMS_NAME_DELIMITER + (valName || '');
+				};
 
 				me.get = function (valName:string) {
-					var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName,
+					var propertyName = me.getLocalStorageKey(valName),
 						item = <ILocalStorageItemWrapper>storage.get(propertyName);
 					if (item) {
-						if (LocalStorageHelpers.isItemInvalid(storage.get(propertyName), options, allDep)) {
+						if (LocalStorageHelpers.isItemInvalid(storage.get(propertyName), _options, allDep)) {
 							storage.remove(propertyName);
 							return null;
 						}
@@ -306,13 +316,12 @@ module SpeedShifter.Services {
 					return item.data;
 				};
 
-
 				me.set = function (valName:string, val:any) {
-					var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName,
+					var propertyName = me.getLocalStorageKey(valName),
 						item = <ILocalStorageItemWrapper>{
 							data: val,
 							time: (new Date()).getTime(),
-							depends: LocalStorageHelpers.composeDeps(options.dependent, allDep)
+							depends: LocalStorageHelpers.composeDeps(_options.dependent, allDep)
 						};
 					try {
 						storage.set(propertyName, item);
@@ -323,7 +332,7 @@ module SpeedShifter.Services {
 				};
 
 				me.remove = function (valName:string) {
-					var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName;
+					var propertyName = me.getLocalStorageKey(valName);
 					storage.remove(propertyName);
 				};
 
@@ -396,12 +405,12 @@ module SpeedShifter.Services {
 				};
 				private_me.isInvalid = function(key: string, now: number = (new Date()).getTime()) {
 					if (private_me.isBelongs(key)) {
-						return LocalStorageHelpers.isItemInvalid(storage.get(key), options, allDep, now);
+						return LocalStorageHelpers.isItemInvalid(storage.get(key), _options, allDep, now);
 					}
 					return false;
 				};
 				private_me.isCritical = function (key: string) {
-					return private_me.isBelongs(key) && options.critical;
+					return private_me.isBelongs(key) && _options.critical;
 				};
 				private_me.setClearInterval = function(time: number = DEF_CLEAN_INTERVAL) {
 					$interval.cancel(private_me.clearInterval);
@@ -409,7 +418,7 @@ module SpeedShifter.Services {
 						private_me.clearInterval = $interval(private_me.cleanStorage, time);
 					}
 				};
-				private_me.setClearInterval(options.cleanTimeout);
+				private_me.setClearInterval(_options.cleanTimeout);
 
 				cacheManager.registerCacheObject(storageValName, me, private_me);
 

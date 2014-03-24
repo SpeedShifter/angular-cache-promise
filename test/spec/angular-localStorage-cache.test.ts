@@ -26,7 +26,7 @@ describe('angular-localStorage-cache:', function(){
 			expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("version", [depStorage, depStorage, depStorage, depStorage, globalDepStorage]))
 				.toEqual(globalDepStorage["version"]);
 			expect(SpeedShifter.Services.LocalStorageHelpers.getDepend("a", [depStorage, globalDepStorage]))
-				.toBeUndefined();
+				.toBeNull();
 		});
 
 		it('compare', function(){
@@ -187,9 +187,62 @@ describe('angular-localStorage-cache:', function(){
 					userId: globalDepStorage["userId"].value
 				});
 			expect(SpeedShifter.Services.LocalStorageHelpers.composeDeps(["userId"], []))
-				.toBeUndefined();
+				.toBeNull();
 			expect(SpeedShifter.Services.LocalStorageHelpers.composeDeps(["a"], [depStorage, globalDepStorage]))
-				.toBeUndefined();
+				.toBeNull();
+		});
+	});
+	describe('service:', function () {
+		var localStorage: SpeedShifter.Services.ILocalStorageService,
+			$timeout: ng.ITimeoutService,
+			$window: {localStorage: Storage};
+		beforeEach(function () {
+			angular.module('test', ['speedshifter.localStoragePromise']);
+		});
+		beforeEach(module('test'));
+		beforeEach(inject(function (_localStoragePromise_, _$timeout_, _$window_) {
+			localStorage = _localStoragePromise_;
+			$timeout = _$timeout_;
+			$window = _$window_;
+		}));
+		it('should create new cache factory', function () {
+			expect(localStorage).not.toBeNull();
+		});
+		describe('localStorage:', function () {
+			var storage: SpeedShifter.Services.ILocalStorageObject,
+				val;
+			beforeEach(function () {
+				$window.localStorage.clear();
+				storage = localStorage("localStorage", <SpeedShifter.Services.ILocalStorageOptions>{});
+				val = {a:1, b:2};
+			});
+
+			it('new storage object should be created', function () {
+				expect(storage).toBeDefined();
+				expect(storage.clear).toBeDefined();
+				expect(storage.get).toBeDefined();
+				expect(storage.set).toBeDefined();
+				expect(storage.setDependence).toBeDefined();
+				expect(storage.setDependenceVal).toBeDefined();
+				expect(storage.setOptions).toBeDefined();
+				expect(storage.clearStorage).toBeDefined();
+				expect(storage.remove).toBeDefined();
+				expect(storage.getLocalStorageKey).toBeDefined();
+			});
+			it('not setted value, should be undefined', function () {
+				expect(storage.get("val")).toBeNull(); // before set
+			});
+			it('after set, get should return same value', function () {
+				expect(storage.get("val")).toBeNull();
+				expect(storage.set("val", val)).toBeUndefined();
+				expect(storage.get("val")).toEqual({b:2, a:1});
+
+				expect($window.localStorage.getItem(storage.getLocalStorageKey("val"))).toBeDefined();
+			});
+			it('hardcore $window.localStorage.clear should remove all items', function () {
+				$window.localStorage.clear();
+				expect($window.localStorage.getItem(storage.getLocalStorageKey("val"))).toBeNull();
+			});
 		});
 	});
 });

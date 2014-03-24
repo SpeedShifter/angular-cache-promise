@@ -13,7 +13,7 @@ var SpeedShifter;
                         return depStorages[i][name];
                     }
                 }
-                return undefined;
+                return null;
             };
             LocalStorageHelpers.isDependentFailed = function (vals, deps, depStorages) {
                 if (!vals)
@@ -62,7 +62,7 @@ var SpeedShifter;
                     if (c > 0)
                         return deps;
                 }
-                return undefined;
+                return null;
             };
             return LocalStorageHelpers;
         })();
@@ -71,7 +71,7 @@ var SpeedShifter;
         Services.LocalStorageProvider = function () {
             var provider = this, serviceProvider = this, ITEMS_NAME_DELIMITER = ".", ITEMS_NAME_DELIMITER_REG_SAFE = "\\.", DEF_CLEAN_INTERVAL = 5 * 60 * 1000;
 
-            provider.name = '';
+            provider.name = 'ngLocalStorage';
             provider.defOptions = {};
 
             this.$get = [
@@ -216,15 +216,21 @@ var SpeedShifter;
                             return cacheManager.getCacheObject(storageValName);
                         }
 
-                        options = angular.extend({}, provider.defOptions, options);
-                        var storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE, "gi");
+                        var me = {}, localDep = {}, allDep = [localDep, globalDep], private_me = {}, storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE, "gi"), _options;
 
-                        var me = {}, localDep = {}, allDep = [localDep, globalDep], private_me = {};
+                        me.setOptions = function (_options_) {
+                            _options = angular.extend({}, provider.defOptions, _options_);
+                        };
+                        me.setOptions(options);
+
+                        me.getLocalStorageKey = function (valName) {
+                            return storageValName + ITEMS_NAME_DELIMITER + (valName || '');
+                        };
 
                         me.get = function (valName) {
-                            var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName, item = storage.get(propertyName);
+                            var propertyName = me.getLocalStorageKey(valName), item = storage.get(propertyName);
                             if (item) {
-                                if (LocalStorageHelpers.isItemInvalid(storage.get(propertyName), options, allDep)) {
+                                if (LocalStorageHelpers.isItemInvalid(storage.get(propertyName), _options, allDep)) {
                                     storage.remove(propertyName);
                                     return null;
                                 }
@@ -236,10 +242,10 @@ var SpeedShifter;
                         };
 
                         me.set = function (valName, val) {
-                            var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName, item = {
+                            var propertyName = me.getLocalStorageKey(valName), item = {
                                 data: val,
                                 time: (new Date()).getTime(),
-                                depends: LocalStorageHelpers.composeDeps(options.dependent, allDep)
+                                depends: LocalStorageHelpers.composeDeps(_options.dependent, allDep)
                             };
                             try  {
                                 storage.set(propertyName, item);
@@ -250,7 +256,7 @@ var SpeedShifter;
                         };
 
                         me.remove = function (valName) {
-                            var propertyName = storageValName + ITEMS_NAME_DELIMITER + valName;
+                            var propertyName = me.getLocalStorageKey(valName);
                             storage.remove(propertyName);
                         };
 
@@ -324,12 +330,12 @@ var SpeedShifter;
                         private_me.isInvalid = function (key, now) {
                             if (typeof now === "undefined") { now = (new Date()).getTime(); }
                             if (private_me.isBelongs(key)) {
-                                return LocalStorageHelpers.isItemInvalid(storage.get(key), options, allDep, now);
+                                return LocalStorageHelpers.isItemInvalid(storage.get(key), _options, allDep, now);
                             }
                             return false;
                         };
                         private_me.isCritical = function (key) {
-                            return private_me.isBelongs(key) && options.critical;
+                            return private_me.isBelongs(key) && _options.critical;
                         };
                         private_me.setClearInterval = function (time) {
                             if (typeof time === "undefined") { time = DEF_CLEAN_INTERVAL; }
@@ -338,7 +344,7 @@ var SpeedShifter;
                                 private_me.clearInterval = $interval(private_me.cleanStorage, time);
                             }
                         };
-                        private_me.setClearInterval(options.cleanTimeout);
+                        private_me.setClearInterval(_options.cleanTimeout);
 
                         cacheManager.registerCacheObject(storageValName, me, private_me);
 
