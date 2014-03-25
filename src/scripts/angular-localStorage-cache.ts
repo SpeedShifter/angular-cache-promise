@@ -31,6 +31,7 @@ module SpeedShifter.Services {
 		clear(); // clear all bunch of items
 		clearStorage(); // clear all storage totally, but only registered items
 		setDependence(dep: ILocalStorageDepend, global?: boolean);
+		removeDependence(name: string, global?: boolean);
 		setDependenceVal(name: string, val: any, global?: boolean);
 		setOptions(options:ILocalStorageOptions);
 	}
@@ -99,8 +100,9 @@ module SpeedShifter.Services {
 		static isItemOutdated (item: ILocalStorageItemWrapper, options: ILocalStorageOptions, now: number = (new Date()).getTime()) {
 			if (item && !options)
 				return false;
+
 			if (!item || !options
-				|| (options.expires && !(item.time && item.time + options.expires > now))) {
+				|| (options.expires && !(angular.isDefined(item.time) && (now - item.time < options.expires)))) {
 				return true;
 			}
 			return false;
@@ -370,6 +372,16 @@ module SpeedShifter.Services {
 					} else {
 						localDep[dep.name] = dep;
 						private_me.cleanStorage(5*1000); // no need to remove it immediately
+					}
+				};
+
+				me.removeDependence = function(name: string, global?: boolean) {
+					if (global) {
+						delete globalDep[name];
+						cacheManager.cleanStorage(10*1000); // no need to remove it immediately
+					} else {
+						delete localDep[name];
+						private_me.cleanStorage(10*1000); // no need to remove it immediately
 					}
 				};
 

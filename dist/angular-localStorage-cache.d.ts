@@ -26,6 +26,7 @@ declare module SpeedShifter.Services {
         clear(): any;
         clearStorage(): any;
         setDependence(dep: ILocalStorageDepend, global?: boolean): any;
+        removeDependence(name: string, global?: boolean): any;
         setDependenceVal(name: string, val: any, global?: boolean): any;
         setOptions(options: ILocalStorageOptions): any;
     }

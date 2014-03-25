@@ -35,7 +35,8 @@ var SpeedShifter;
                 if (typeof now === "undefined") { now = (new Date()).getTime(); }
                 if (item && !options)
                     return false;
-                if (!item || !options || (options.expires && !(item.time && item.time + options.expires > now))) {
+
+                if (!item || !options || (options.expires && !(angular.isDefined(item.time) && (now - item.time < options.expires)))) {
                     return true;
                 }
                 return false;
@@ -293,6 +294,16 @@ var SpeedShifter;
                             } else {
                                 localDep[dep.name] = dep;
                                 private_me.cleanStorage(5 * 1000);
+                            }
+                        };
+
+                        me.removeDependence = function (name, global) {
+                            if (global) {
+                                delete globalDep[name];
+                                cacheManager.cleanStorage(10 * 1000);
+                            } else {
+                                delete localDep[name];
+                                private_me.cleanStorage(10 * 1000);
                             }
                         };
 
