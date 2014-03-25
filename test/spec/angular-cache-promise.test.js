@@ -1,5 +1,5 @@
 'use strict';
-describe('angular-cache-promise:', function () {
+describe('angular-cache-promise ->', function () {
     var cachePromise, $timeout, $q;
     beforeEach(function () {
         angular.module('test', ['speedshifter.cachePromise']);
@@ -13,7 +13,7 @@ describe('angular-cache-promise:', function () {
     it('should create new cache factory', function () {
         expect(cachePromise).not.toBeNull();
     });
-    describe('cachePromise:', function () {
+    describe('cachePromise ->', function () {
         var cache, def, promise, val, result;
         beforeEach(function () {
             cache = cachePromise("cache1", {
@@ -89,7 +89,7 @@ describe('angular-cache-promise:', function () {
             expect(result2).toBe(val);
         });
     });
-    describe('cachePromise: saveFail:', function () {
+    describe('cachePromise -> saveFail ->', function () {
         var cache, def, promise, val, result;
         beforeEach(function () {
             cache = cachePromise("cache1", {
@@ -146,7 +146,7 @@ describe('angular-cache-promise:', function () {
             expect(cache.get("val")).toBeNull();
         });
     });
-    describe('cachePromise: timeouts:', function () {
+    describe('cachePromise -> timeouts ->', function () {
         var cache, def, promise, val, result;
         beforeEach(inject(function (_cachePromise_) {
             cache = cachePromise("cache1", {
@@ -248,7 +248,7 @@ describe('angular-cache-promise:', function () {
             expect(result2).toBe(val);
         });
     });
-    describe('cachePromise: JQuery:', function () {
+    describe('cachePromise -> JQuery ->', function () {
         var cache, def, promise, val, result;
         beforeEach(inject(function (_cachePromise_) {
             cache = cachePromise("cache1", {
@@ -299,7 +299,7 @@ describe('angular-cache-promise:', function () {
             });
         });
     });
-    describe('cachePromise: dontSaveResult:', function () {
+    describe('cachePromise -> dontSaveResult ->', function () {
         var cache, def, promise, val, result;
         beforeEach(function () {
             cache = cachePromise("cache1", {
@@ -335,7 +335,7 @@ describe('angular-cache-promise:', function () {
             expect(cache.get("val")).toBeNull();
         });
     });
-    describe('cachePromise: defResolver:', function () {
+    describe('cachePromise -> defResolver ->', function () {
         var cache, def, promise, val, result, options = {
             capacity: 100,
             defResolver: function (values, failed) {

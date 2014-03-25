@@ -2,7 +2,7 @@
 
 'use strict';
 
-describe('angular-cache-promise:', function(){
+describe('angular-cache-promise ->', function(){
 	var cachePromise: SpeedShifter.Services.ICachePromiseService,
 		$timeout: ng.ITimeoutService,
 		$q: ng.IQService;
@@ -18,7 +18,7 @@ describe('angular-cache-promise:', function(){
 	it('should create new cache factory', function () {
 		expect(cachePromise).not.toBeNull();
 	});
-	describe('cachePromise:', function () {
+	describe('cachePromise ->', function () {
 		var cache: SpeedShifter.Services.ICachePromiseObject,
 			def: ng.IDeferred<any>,
 			promise: ng.IPromise<any>,
@@ -98,7 +98,7 @@ describe('angular-cache-promise:', function(){
 			expect(result2).toBe(val);
 		});
 	});
-	describe('cachePromise: saveFail:', function () {
+	describe('cachePromise -> saveFail ->', function () {
 		var cache: SpeedShifter.Services.ICachePromiseObject,
 			def: ng.IDeferred<any>,
 			promise: ng.IPromise<any>,
@@ -159,7 +159,7 @@ describe('angular-cache-promise:', function(){
 			expect(cache.get("val")).toBeNull();
 		});
 	});
-	describe('cachePromise: timeouts:', function () {
+	describe('cachePromise -> timeouts ->', function () {
 		var cache: SpeedShifter.Services.ICachePromiseObject,
 			def: ng.IDeferred<any>,
 			promise: ng.IPromise<any>,
@@ -267,7 +267,7 @@ describe('angular-cache-promise:', function(){
 			expect(result2).toBe(val);
 		});
 	});
-	describe('cachePromise: JQuery:', function () {
+	describe('cachePromise -> JQuery ->', function () {
 		var cache: SpeedShifter.Services.ICachePromiseObject,
 			def: JQueryDeferred<any>,
 			promise: JQueryPromise<any>,
@@ -321,7 +321,7 @@ describe('angular-cache-promise:', function(){
 			});
 		});
 	});
-	describe('cachePromise: dontSaveResult:', function () {
+	describe('cachePromise -> dontSaveResult ->', function () {
 		var cache: SpeedShifter.Services.ICachePromiseObject,
 			def: ng.IDeferred<any>,
 			promise: ng.IPromise<any>,
@@ -361,7 +361,7 @@ describe('angular-cache-promise:', function(){
 			expect(cache.get("val")).toBeNull();
 		});
 	});
-	describe('cachePromise: defResolver:', function () {
+	describe('cachePromise -> defResolver ->', function () {
 		var cache: SpeedShifter.Services.ICachePromiseObject,
 			def: ng.IDeferred<any>,
 			promise: ng.IPromise<any>,
