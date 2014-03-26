@@ -137,11 +137,13 @@ var SpeedShifter;
                             return;
 
                         if (angular.isDefined(delay) && angular.isNumber(delay)) {
-                            $timeout(cacheManager.cleanStorage, delay);
-                            return;
+                            $timeout.cancel(cacheManager.cleanTimeout);
+                            cacheManager.cleanTimeout = $timeout(cacheManager.cleanStorage, delay);
+                            return 0;
                         }
 
                         var i, key, j, stack = cacheManager.cacheStack, count = 0, now = (new Date()).getTime();
+
                         for (i = 0; i < _localStorage.length; i++) {
                             key = _localStorage.key(i);
                             for (j in stack) {
@@ -156,6 +158,7 @@ var SpeedShifter;
                                 }
                             }
                         }
+                        cacheManager.resetCleanInterval();
                         return count;
                     };
                     cacheManager.cleanOnStorageOverflow = function (limit) {
@@ -206,12 +209,19 @@ var SpeedShifter;
                         }
                         return count;
                     };
-                    cacheManager.setClearInterval = function (time) {
+                    cacheManager.setCleanInterval = function (time) {
                         if (typeof time === "undefined") { time = DEF_CLEAN_INTERVAL; }
-                        $interval.cancel(cacheManager.clearInterval);
-                        cacheManager.clearInterval = $interval(cacheManager.cleanStorage, time);
+                        cacheManager.cleanIntervalTime = time;
+                        $interval.cancel(cacheManager.cleanInterval);
+                        cacheManager.cleanInterval = $interval(cacheManager.cleanStorage, time);
                     };
-                    cacheManager.setClearInterval(provider.defOptions.cleanTimeout);
+                    cacheManager.resetCleanInterval = function () {
+                        cacheManager.setCleanInterval(cacheManager.cleanIntervalTime);
+                        for (var i in cacheManager.cacheStack) {
+                            cacheManager.cacheStack[i].private_cache.resetCleanInterval();
+                        }
+                    };
+                    cacheManager.setCleanInterval(provider.defOptions.cleanTimeout);
                     cacheManager.cleanStorage(10 * 1000);
 
                     if (!_localStorage_supported) {
@@ -334,11 +344,13 @@ var SpeedShifter;
                                 return;
 
                             if (angular.isDefined(delay) && angular.isNumber(delay)) {
-                                $timeout(private_me.cleanStorage, delay);
-                                return;
+                                $timeout.cancel(private_me.cleanTimeout);
+                                private_me.cleanTimeout = $timeout(private_me.cleanStorage, delay);
+                                return 0;
                             }
 
                             var i, key, count = 0, now = (new Date()).getTime();
+
                             for (i = 0; i < _localStorage.length; i++) {
                                 key = _localStorage.key(i);
                                 if (private_me.isInvalid(key, now)) {
@@ -346,6 +358,7 @@ var SpeedShifter;
                                     i--;
                                 }
                             }
+                            private_me.resetCleanInterval();
                             return count;
                         };
                         private_me.isBelongs = function (key) {
@@ -361,14 +374,16 @@ var SpeedShifter;
                         private_me.isCritical = function (key) {
                             return private_me.isBelongs(key) && _options.critical;
                         };
-                        private_me.setClearInterval = function (time) {
+                        private_me.setCleanInterval = function (time) {
                             if (typeof time === "undefined") { time = DEF_CLEAN_INTERVAL; }
-                            $interval.cancel(private_me.clearInterval);
-                            if (time != provider.defOptions.cleanTimeout) {
-                                private_me.clearInterval = $interval(private_me.cleanStorage, time);
-                            }
+                            private_me.cleanIntervalTime = time;
+                            $interval.cancel(private_me.cleanInterval);
+                            private_me.cleanInterval = $interval(private_me.cleanStorage, time);
                         };
-                        private_me.setClearInterval(_options.cleanTimeout);
+                        private_me.resetCleanInterval = function () {
+                            private_me.setCleanInterval(private_me.cleanIntervalTime);
+                        };
+                        private_me.setCleanInterval(_options.cleanTimeout);
 
                         cacheManager.registerCacheObject(storageValName, me, private_me);
 

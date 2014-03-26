@@ -200,6 +200,7 @@ describe('angular-localStorage-cache ->', function(){
 	describe('service ->', function () {
 		var localStorage: SpeedShifter.Services.ILocalStorageService,
 			$timeout: ng.ITimeoutService,
+			$interval: ng.IIntervalService,
 			$window: {localStorage: Storage};
 
 		beforeEach(function () {
@@ -208,9 +209,10 @@ describe('angular-localStorage-cache ->', function(){
 
 		beforeEach(module('test'));
 
-		beforeEach(inject(function (_localStoragePromise_, _$timeout_, _$window_) {
+		beforeEach(inject(function (_localStoragePromise_, _$timeout_, _$window_, _$interval_) {
 			localStorage = _localStoragePromise_;
 			$timeout = _$timeout_;
+			$interval = _$interval_;
 			$window = _$window_;
 		}));
 
@@ -709,7 +711,8 @@ describe('angular-localStorage-cache ->', function(){
 			describe('expiration ->', function () {
 				beforeEach(function () {
 					storage = localStorage("localStorage", <SpeedShifter.Services.ILocalStorageOptions>{
-						expires: 10*1000
+						expires: 10*1000,
+						cleanTimeout: 20*1000
 					});
 					val = {a:1, b:2};
 				});
@@ -745,6 +748,29 @@ describe('angular-localStorage-cache ->', function(){
 					setTime(11*1000);
 
 					expect(storage.get("val")).toBeNull(); // now should
+				});
+				it('storage should be cleaned', function () {
+					expect(storage.get("val")).toBeNull();
+					storage.set("val", val);
+					storage.set("val2", val);
+					storage.set("val3", val);
+
+					$window.localStorage.setItem("other Item", "other");
+
+					expect(storage.get("val")).toEqual(val);
+
+					setTime(5*1000);
+
+					expect(storage.get("val")).toEqual(val); // shouldn't expire yet
+
+					setTime(11*1000);
+
+					expect($window.localStorage.length).toBe(4);
+
+					setTime(21*1000);
+					$timeout.flush();
+
+					expect($window.localStorage.length).toBe(1); // only storage items should be cleaned
 				});
 			});
 		});

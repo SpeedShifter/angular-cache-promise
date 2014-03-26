@@ -47,8 +47,11 @@ module SpeedShifter.Services {
 		isInvalid(key: string, now?: number): boolean;
 		isCritical(key: string): boolean;
 		cleanStorage(delay?: number);
-		setClearInterval(time?: number);
-		clearInterval: ng.IPromise<any>;
+		setCleanInterval(time?: number);
+		resetCleanInterval();
+		cleanInterval?: ng.IPromise<any>;
+		cleanTimeout?: ng.IPromise<any>;
+		cleanIntervalTime?: number;
 	}
 
 	interface ILocalStorageCacheManager {
@@ -56,11 +59,14 @@ module SpeedShifter.Services {
 		getCacheObject(id: string): ILocalStorageObject;
 		registerCacheObject(id: string, cache: ILocalStorageObject, private_cache: ILocalStoragePrivateObject);
 		unregisterCacheObject(id: string);
-		cleanStorage(delay?: number): number;
-		cleanOnStorageOverflow(limit: number): number;
 		clearStorage(): number;
-		setClearInterval(time?: number);
-		clearInterval: ng.IPromise<any>;
+		cleanOnStorageOverflow(limit: number): number;
+		cleanStorage(delay?: number): number;
+		setCleanInterval(time?: number);
+		resetCleanInterval();
+		cleanInterval?: ng.IPromise<any>;
+		cleanTimeout?: ng.IPromise<any>;
+		cleanIntervalTime?: number;
 	}
 
 	export class LocalStorageHelpers {
@@ -208,14 +214,16 @@ module SpeedShifter.Services {
 				if (!_localStorage_supported) return;
 
 				if (angular.isDefined(delay) && angular.isNumber(delay)) {
-					$timeout(cacheManager.cleanStorage, delay);
-					return;
+					$timeout.cancel(cacheManager.cleanTimeout);
+					cacheManager.cleanTimeout = $timeout(cacheManager.cleanStorage, delay);
+					return 0;
 				}
 
 				var i, key, j,
 					stack = cacheManager.cacheStack,
 					count = 0,
 					now = (new Date()).getTime();
+
 				for (i = 0; i < _localStorage.length; i++) {
 					key = _localStorage.key(i);
 					for (j in stack) {
@@ -229,6 +237,7 @@ module SpeedShifter.Services {
 						} catch (e) {}
 					}
 				}
+				cacheManager.resetCleanInterval();
 				return count;
 			};
 			cacheManager.cleanOnStorageOverflow = function (limit: number) {
@@ -279,11 +288,18 @@ module SpeedShifter.Services {
 				}
 				return count;
 			};
-			cacheManager.setClearInterval = function(time: number = DEF_CLEAN_INTERVAL) {
-				$interval.cancel(cacheManager.clearInterval);
-				cacheManager.clearInterval = $interval(cacheManager.cleanStorage, time);
+			cacheManager.setCleanInterval = function(time: number = DEF_CLEAN_INTERVAL) {
+				cacheManager.cleanIntervalTime = time;
+				$interval.cancel(cacheManager.cleanInterval);
+				cacheManager.cleanInterval = $interval(cacheManager.cleanStorage, time);
 			};
-			cacheManager.setClearInterval(provider.defOptions.cleanTimeout);
+			cacheManager.resetCleanInterval = function() {
+				cacheManager.setCleanInterval(cacheManager.cleanIntervalTime); // reset cleanInterval
+				for (var i in cacheManager.cacheStack) {                       // reset other intervals, as cacheManager.cleanStorage processes all items
+					cacheManager.cacheStack[i].private_cache.resetCleanInterval();
+				}
+			};
+			cacheManager.setCleanInterval(provider.defOptions.cleanTimeout);
 			cacheManager.cleanStorage(10*1000); // try to clean old values
 
 			if (!_localStorage_supported) {
@@ -411,13 +427,15 @@ module SpeedShifter.Services {
 					if (!_localStorage_supported) return;
 
 					if (angular.isDefined(delay) && angular.isNumber(delay)) {
-						$timeout(private_me.cleanStorage, delay);
-						return;
+						$timeout.cancel(private_me.cleanTimeout);
+						private_me.cleanTimeout = $timeout(private_me.cleanStorage, delay);
+						return 0;
 					}
 
 					var i, key,
 						count = 0,
 						now = (new Date()).getTime();
+
 					for (i = 0; i < _localStorage.length; i++) {
 						key = _localStorage.key(i);
 						if (private_me.isInvalid(key, now)) {
@@ -425,6 +443,7 @@ module SpeedShifter.Services {
 							i--;
 						}
 					}
+					private_me.resetCleanInterval();
 					return count;
 				};
 				private_me.isBelongs = function (key: string) {
@@ -439,13 +458,15 @@ module SpeedShifter.Services {
 				private_me.isCritical = function (key: string) {
 					return private_me.isBelongs(key) && _options.critical;
 				};
-				private_me.setClearInterval = function(time: number = DEF_CLEAN_INTERVAL) {
-					$interval.cancel(private_me.clearInterval);
-					if (time != provider.defOptions.cleanTimeout) {  // if intervals are same as global interval, no need to create it here
-						private_me.clearInterval = $interval(private_me.cleanStorage, time);
-					}
+				private_me.setCleanInterval = function(time: number = DEF_CLEAN_INTERVAL) {
+					private_me.cleanIntervalTime = time;
+					$interval.cancel(private_me.cleanInterval);
+					private_me.cleanInterval = $interval(private_me.cleanStorage, time);
 				};
-				private_me.setClearInterval(_options.cleanTimeout);
+				private_me.resetCleanInterval = function() {
+					private_me.setCleanInterval(private_me.cleanIntervalTime);
+				};
+				private_me.setCleanInterval(_options.cleanTimeout);
 
 				cacheManager.registerCacheObject(storageValName, me, private_me);
 
