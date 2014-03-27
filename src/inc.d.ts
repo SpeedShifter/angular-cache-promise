@@ -3,3 +3,4 @@
 
 /// <reference path="scripts/angular-cache-promise.ts" />
 /// <reference path="scripts/angular-localStorage-cache.ts" />
+/// <reference path="scripts/dependency-checker.ts" />

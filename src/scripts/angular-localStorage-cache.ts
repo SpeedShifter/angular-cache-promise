@@ -36,16 +36,11 @@ module SpeedShifter.Services {
 		setOptions(options:ILocalStorageOptions);
 	}
 
-	export interface ILocalStorageItemWrapper {
-		time?: number;
+	export interface ILocalStorageItemWrapper extends IDepCheckerItemWrapper{
 		data?: any; // cached data
-		depends?: {[name: string]: any};
 	}
 
-	interface ILocalStoragePrivateObject {
-		isBelongs(key: string): boolean;
-		isInvalid(key: string, now?: number): boolean;
-		isCritical(key: string): boolean;
+	interface ILocalStorageCleanable {
 		cleanStorage(delay?: number);
 		setCleanInterval(time?: number);
 		resetCleanInterval();
@@ -54,93 +49,21 @@ module SpeedShifter.Services {
 		cleanIntervalTime?: number;
 	}
 
-	interface ILocalStorageCacheManager {
+	interface ILocalStoragePrivateObject extends ILocalStorageCleanable{
+		isBelongs(key: string): boolean;
+		isInvalid(key: string, now?: number): boolean;
+		isCritical(key: string): boolean;
+	}
+
+	interface ILocalStorageCacheManager extends ILocalStorageCleanable {
 		cacheStack: {[id: string]: {cache: ILocalStorageObject; private_cache: ILocalStoragePrivateObject}};
 		getCacheObject(id: string): ILocalStorageObject;
 		registerCacheObject(id: string, cache: ILocalStorageObject, private_cache: ILocalStoragePrivateObject);
 		unregisterCacheObject(id: string);
 		clearStorage(): number;
 		cleanOnStorageOverflow(limit: number): number;
-		cleanStorage(delay?: number): number;
-		setCleanInterval(time?: number);
-		resetCleanInterval();
-		cleanInterval?: ng.IPromise<any>;
-		cleanTimeout?: ng.IPromise<any>;
-		cleanIntervalTime?: number;
 	}
 
-	export class LocalStorageHelpers {
-		static compare(dep: ILocalStorageDepend, val) {
-			return dep
-				&& ((dep.comparator && dep.comparator(dep.value, val))
-				|| (dep.value === val)
-				|| (angular.isObject(dep.value) && angular.equals(dep.value, val)));
-		}
-		static getDepend (name: string, depStorages: {[nm:string]: ILocalStorageDepend}[]) {
-			for (var i=0; depStorages && i<depStorages.length; i++) {
-				if (depStorages[i][name]) {
-					return depStorages[i][name];
-				}
-			}
-			return null;
-		}
-		static isDependentFailed (vals: {[name: string]: any}, deps: string[], depStorages: {[name:string]: ILocalStorageDepend}[]) {
-			if (!vals)
-				return true;
-
-			var i, name,
-				depend;
-
-			if (deps && deps.length > 0) {
-				for (i=0; i<deps.length; i++) {
-					depend = LocalStorageHelpers.getDepend(deps[i], <{[name:string]: ILocalStorageDepend}[]>depStorages);
-					if (!depend
-						|| angular.isUndefined(vals[deps[i]])
-						|| (depend && !LocalStorageHelpers.compare(depend, vals[deps[i]]))) { // dependency is required, depStorages doesn't contains it, or vals doesn't so
-							return true;
-					}
-				}
-			}
-			return false;
-		}
-		static isItemOutdated (item: ILocalStorageItemWrapper, options: ILocalStorageOptions, now: number = (new Date()).getTime()) {
-			if (item && !options)
-				return false;
-
-			if (!item || !options
-				|| (options.expires && !(angular.isDefined(item.time) && (now - item.time < options.expires)))) {
-				return true;
-			}
-			return false;
-		}
-		static isItemInvalid (item: ILocalStorageItemWrapper, options: ILocalStorageOptions, depStorages: {[name:string]: ILocalStorageDepend}[], now: number = (new Date()).getTime()) {
-			if (item && !options)
-				return false;
-			if (!item || !options || !depStorages
-				|| LocalStorageHelpers.isItemOutdated(item, options, now)
-				|| (options.dependent && LocalStorageHelpers.isDependentFailed(item.depends, options.dependent, depStorages))) {
-				return true;
-			}
-			return false;
-		}
-		static composeDeps (dep: string[], depStorages: {[name:string]: ILocalStorageDepend}[]): {[prop: string]: any} {
-			if (dep && dep.length > 0) {
-				var deps = <{[prop: string]: any}>{},
-					i, depend,
-					c = 0;
-				for (i=0; i<dep.length; i++) {
-					depend = LocalStorageHelpers.getDepend(dep[i], depStorages);
-					if (depend) {
-						deps[dep[i]] = depend.value;
-						c++;
-					}
-				}
-				if (c>0)
-					return deps;
-			}
-			return null;
-		}
-	}
 
 	export var LocalStorageProvider = function () {
 		var provider = <any>this,
@@ -196,7 +119,7 @@ module SpeedShifter.Services {
 				cacheManager = <ILocalStorageCacheManager> {
 					cacheStack: {}
 				},
-				globalDep = <{[name:string]: ILocalStorageDepend}>{};
+				globalDep = new DepStorage();
 
 			cacheManager.getCacheObject = function (id: string) {
 				return (cacheManager.cacheStack[id] && cacheManager.cacheStack[id].cache) || null;
@@ -247,8 +170,7 @@ module SpeedShifter.Services {
 
 				if (limit && count < limit) {
 					var i, key, j,
-						stack = cacheManager.cacheStack,
-						count = 0;
+						stack = cacheManager.cacheStack;
 					for (i = 0; i < _localStorage.length; i++) {
 						key = _localStorage.key(i);
 						for (j in stack) {
@@ -314,14 +236,15 @@ module SpeedShifter.Services {
 				}
 
 				var me = <ILocalStorageObject>{},
-					localDep = <{[name:string]: ILocalStorageDepend}>{},
-					allDep = [localDep, globalDep],
+					localDep = new DepStorage(globalDep),
 					private_me = <ILocalStoragePrivateObject> {},
 					storageName_regexp = new RegExp("^" + storageValName + ITEMS_NAME_DELIMITER_REG_SAFE + ".*", "i"),
-					_options;
+					_options,
+					depChecker = new DepChecker(options, localDep);
 
 				me.setOptions = function(_options_:ILocalStorageOptions) {
 					_options = <ILocalStorageOptions>angular.extend({}, provider.defOptions, _options_);
+					depChecker.setOptions(_options);
 				};
 				me.setOptions(options);
 
@@ -333,7 +256,7 @@ module SpeedShifter.Services {
 					var propertyName = me.getLocalStorageKey(valName),
 						item = <ILocalStorageItemWrapper>storage.get(propertyName);
 					if (item) {
-						if (LocalStorageHelpers.isItemInvalid(storage.get(propertyName), _options, allDep)) {
+						if (depChecker.isItemInvalid(storage.get(propertyName))) {
 							storage.remove(propertyName);
 							return null;
 						}
@@ -348,8 +271,8 @@ module SpeedShifter.Services {
 					var propertyName = me.getLocalStorageKey(valName),
 						item = <ILocalStorageItemWrapper>{
 							data: val,
-							time: (new Date()).getTime(),
-							depends: LocalStorageHelpers.composeDeps(_options.dependent, allDep)
+							time: ExpirationChecker.now(),
+							depends: localDep.composeDeps(_options.dependent)
 						};
 					try {
 						storage.set(propertyName, item);
@@ -383,42 +306,30 @@ module SpeedShifter.Services {
 
 				me.setDependence = function(dep: ILocalStorageDepend, global?: boolean) {
 					if (global) {
-						globalDep[dep.name] = dep;
+						globalDep.setDependence(dep);
 						cacheManager.cleanStorage(5*1000); // no need to remove it immediately
 					} else {
-						localDep[dep.name] = dep;
+						localDep.setDependence(dep);
 						private_me.cleanStorage(5*1000); // no need to remove it immediately
 					}
 				};
 
 				me.removeDependence = function(name: string, global?: boolean) {
 					if (global) {
-						delete globalDep[name];
+						globalDep.removeDependence(name);
 						cacheManager.cleanStorage(10*1000); // no need to remove it immediately
 					} else {
-						delete localDep[name];
+						localDep.removeDependence(name);
 						private_me.cleanStorage(10*1000); // no need to remove it immediately
 					}
 				};
 
 				me.setDependenceVal = function(name: string, val: any, global?: boolean) {
 					if (global) {
-						if (globalDep[name])
-							globalDep[name].value = val;
-						else
-							globalDep[name] = <ILocalStorageDepend> {
-								name: name,
-								value: val
-							};
+						globalDep.setDependenceVal(name, val);
 						cacheManager.cleanStorage(5*1000);
 					} else {
-						if (localDep[name])
-							localDep[name].value = val;
-						else
-							localDep[name] = <ILocalStorageDepend> {
-								name: name,
-								value: val
-							};
+						localDep.setDependenceVal(name, val);
 						private_me.cleanStorage(5*1000);
 					}
 				};
@@ -449,9 +360,9 @@ module SpeedShifter.Services {
 				private_me.isBelongs = function (key: string) {
 					return storageName_regexp.test(key);
 				};
-				private_me.isInvalid = function(key: string, now: number = (new Date()).getTime()) {
+				private_me.isInvalid = function(key: string, now?: number) {
 					if (private_me.isBelongs(key)) {
-						return LocalStorageHelpers.isItemInvalid(storage.get(key), _options, allDep, now);
+						return depChecker.isItemInvalid(storage.get(key), now);
 					}
 					return false;
 				};
@@ -473,7 +384,6 @@ module SpeedShifter.Services {
 				return me;
 			};
 		}];
-
 		serviceProvider.setAppName = function (name:string) {
 			provider.name = name;
 		};

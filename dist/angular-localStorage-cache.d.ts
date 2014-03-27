@@ -30,32 +30,8 @@ declare module SpeedShifter.Services {
         setDependenceVal(name: string, val: any, global?: boolean): any;
         setOptions(options: ILocalStorageOptions): any;
     }
-    interface ILocalStorageItemWrapper {
-        time?: number;
+    interface ILocalStorageItemWrapper extends Services.IDepCheckerItemWrapper {
         data?: any;
-        depends?: {
-            [name: string]: any;
-        };
-    }
-    class LocalStorageHelpers {
-        static compare(dep: ILocalStorageDepend, val: any): boolean;
-        static getDepend(name: string, depStorages: {
-            [nm: string]: ILocalStorageDepend;
-        }[]): ILocalStorageDepend;
-        static isDependentFailed(vals: {
-            [name: string]: any;
-        }, deps: string[], depStorages: {
-            [name: string]: ILocalStorageDepend;
-        }[]): boolean;
-        static isItemOutdated(item: ILocalStorageItemWrapper, options: ILocalStorageOptions, now?: number): boolean;
-        static isItemInvalid(item: ILocalStorageItemWrapper, options: ILocalStorageOptions, depStorages: {
-            [name: string]: ILocalStorageDepend;
-        }[], now?: number): boolean;
-        static composeDeps(dep: string[], depStorages: {
-            [name: string]: ILocalStorageDepend;
-        }[]): {
-            [prop: string]: any;
-        };
     }
     var LocalStorageProvider: () => void;
 }
