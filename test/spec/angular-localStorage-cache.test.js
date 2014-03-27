@@ -1,5 +1,5 @@
 'use strict';
-describe('angular-localStorage-cache ->', function () {
+xdescribe('angular-localStorage-cache ->', function () {
     describe('service ->', function () {
         var localStorage, $timeout, $interval, $window;
 

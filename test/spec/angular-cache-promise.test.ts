@@ -2,7 +2,7 @@
 
 'use strict';
 
-describe('angular-cache-promise ->', function(){
+xdescribe('angular-cache-promise ->', function(){
 	var cachePromise: SpeedShifter.Services.ICachePromiseService,
 		$timeout: ng.ITimeoutService,
 		$q: ng.IQService;

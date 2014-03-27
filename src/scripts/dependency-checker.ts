@@ -88,6 +88,11 @@ module SpeedShifter.Services {
 			delete this.storage[name];
 		}
 
+		clear() {
+			delete this.storage;
+			this.storage = {};
+		}
+
 		setDependenceVal(name:string, val:any) {
 			if (this.storage[name])
 				this.storage[name].value = val;

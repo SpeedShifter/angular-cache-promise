@@ -83,6 +83,11 @@ var SpeedShifter;
                 delete this.storage[name];
             };
 
+            DepStorage.prototype.clear = function () {
+                delete this.storage;
+                this.storage = {};
+            };
+
             DepStorage.prototype.setDependenceVal = function (name, val) {
                 if (this.storage[name])
                     this.storage[name].value = val;

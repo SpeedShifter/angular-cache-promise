@@ -1,5 +1,5 @@
 'use strict';
-describe('angular-cache-promise ->', function () {
+xdescribe('angular-cache-promise ->', function () {
     var cachePromise, $timeout, $q;
     beforeEach(function () {
         angular.module('test', ['speedshifter.cachePromise']);
