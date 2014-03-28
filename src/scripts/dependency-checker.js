@@ -43,7 +43,7 @@ var SpeedShifter;
             };
 
             DepStorage.prototype.isDependentFailed = function (vals, deps) {
-                if (!deps)
+                if (!deps || deps.length == 0)
                     return false;
                 if (!vals)
                     return true;
@@ -61,22 +61,26 @@ var SpeedShifter;
 
             DepStorage.prototype.composeDeps = function (dep) {
                 if (dep && dep.length > 0) {
-                    var deps = {}, i, depend, c = 0;
+                    var result = {}, i, depend, c = 0;
                     for (i = 0; i < dep.length; i++) {
-                        depend = this.getDepend(deps[i]);
+                        depend = this.getDepend(dep[i]);
                         if (depend) {
-                            deps[dep[i]] = depend.value;
+                            result[dep[i]] = depend.value;
                             c++;
                         }
                     }
                     if (c > 0)
-                        return deps;
+                        return result;
                 }
-                return null;
+                return undefined;
             };
 
             DepStorage.prototype.setDependence = function (dep) {
-                this.storage[dep.name] = dep;
+                this.storage[dep.name] = {
+                    name: dep.name,
+                    value: dep.value,
+                    comparator: dep.comparator
+                };
             };
 
             DepStorage.prototype.removeDependence = function (name) {
@@ -89,9 +93,13 @@ var SpeedShifter;
             };
 
             DepStorage.prototype.setDependenceVal = function (name, val) {
-                if (this.storage[name])
-                    this.storage[name].value = val;
-                else
+                if (this.storage[name]) {
+                    this.storage[name] = {
+                        name: name,
+                        value: val,
+                        comparator: this.storage[name].comparator
+                    };
+                } else
                     this.storage[name] = {
                         name: name,
                         value: val

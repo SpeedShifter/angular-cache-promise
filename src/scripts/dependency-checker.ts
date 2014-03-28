@@ -43,7 +43,7 @@ module SpeedShifter.Services {
 		}
 
 		isDependentFailed (vals: {[name: string]: any}, deps: string[]) {
-			if (!deps)
+			if (!deps || deps.length == 0)
 				return false;
 			if (!vals)
 				return true;
@@ -64,24 +64,28 @@ module SpeedShifter.Services {
 
 		composeDeps (dep: string[]): {[prop: string]: any} {
 			if (dep && dep.length > 0) {
-				var deps = <{[prop: string]: any}>{},
+				var result = <{[prop: string]: any}>{},
 					i, depend,
 					c = 0;
 				for (i=0; i<dep.length; i++) {
-					depend = this.getDepend(deps[i]);
+					depend = this.getDepend(dep[i]);
 					if (depend) {
-						deps[dep[i]] = depend.value;
+						result[dep[i]] = depend.value;
 						c++;
 					}
 				}
 				if (c>0)
-					return deps;
+					return result;
 			}
-			return null;
+			return undefined;
 		}
 
 		setDependence(dep:ILocalStorageDepend) {
-			this.storage[dep.name] = dep;
+			this.storage[dep.name] = <ILocalStorageDepend> { // clone it
+				name: dep.name,
+				value: dep.value,
+				comparator: dep.comparator
+			};
 		}
 
 		removeDependence(name:string) {
@@ -94,9 +98,13 @@ module SpeedShifter.Services {
 		}
 
 		setDependenceVal(name:string, val:any) {
-			if (this.storage[name])
-				this.storage[name].value = val;
-			else
+			if (this.storage[name]) {
+				this.storage[name] = <ILocalStorageDepend> {
+					name: name,
+					value: val,
+					comparator: this.storage[name].comparator
+				};
+			} else
 				this.storage[name] = <ILocalStorageDepend> {
 					name: name,
 					value: val

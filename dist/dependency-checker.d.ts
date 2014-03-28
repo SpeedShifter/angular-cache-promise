@@ -25,6 +25,7 @@ declare module SpeedShifter.Services {
         };
         public setDependence(dep: Services.ILocalStorageDepend): void;
         public removeDependence(name: string): void;
+        public clear(): void;
         public setDependenceVal(name: string, val: any): void;
         static compare(dep: IDepCheckerDepend, val: any): boolean;
     }

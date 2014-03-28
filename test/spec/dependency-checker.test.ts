@@ -44,12 +44,77 @@ describe('dependency-checker ->', function(){
 				storage.clear();
 				expect(storage.getDepend('userId')).toBeNull();
 				expect(storage.getDepend('compare')).toBeNull();
+
+				var changeable = {name: "changeable", value: "654"};
+				storage.setDependence(changeable);
+				expect(storage.getDepend('changeable')).toEqual(changeable);
+				storage.setDependenceVal('changeable', "564");
+				expect(storage.getDepend('changeable')).not.toEqual(changeable);
+				expect(storage.getDepend('changeable').value).toBe("564");
+				expect(changeable.value).toBe("654");
+
+				storage.setDependence(changeable);
+				changeable.value = "ss";
+				expect(storage.getDepend('changeable')).not.toEqual(changeable);
+				expect(storage.getDepend('changeable').value).not.toBe("ss");
 			});
 			it('removeDependence', function() {
 				storage.setDependence(userId);
 				expect(storage.getDepend('userId')).toEqual(userId);
 				storage.removeDependence('userId');
 				expect(storage.getDepend('userId')).toBeNull();
+			});
+			it('isDependentFailed', function() {
+				storage.setDependence(userId);
+				expect(storage.isDependentFailed({userId: userId.value, version: version.value, compare: compare.value}, ["version", "compare", "userId"])).toEqual(true); // not enought depends
+				storage.setDependence(compare);
+				expect(storage.isDependentFailed({userId: userId.value, version: version.value, compare: compare.value}, ["version", "compare", "userId"])).toEqual(true); // not enought depends
+				storage.setDependence(version);
+				expect(storage.isDependentFailed({userId: userId.value, version: version.value, compare: compare.value}, ["version", "compare", "userId"])).toEqual(false);
+				expect(storage.isDependentFailed({userId: userId.value, version: version.value, compare: compare.value}, ["version", "compare"])).toEqual(false);
+				expect(storage.isDependentFailed({userId: userId.value, version: version.value, compare: compare.value}, ["version"])).toEqual(false);
+				expect(storage.isDependentFailed({userId: userId.value, version: version.value, compare: compare.value}, [])).toEqual(false);
+				expect(storage.isDependentFailed({userId: userId.value, version: version.value, compare: compare.value}, null)).toEqual(false);
+
+				expect(storage.isDependentFailed({}, ["version"])).toEqual(true);
+				expect(storage.isDependentFailed({}, null)).toEqual(false);
+				expect(storage.isDependentFailed(null, null)).toEqual(false);
+				expect(storage.isDependentFailed(null, [])).toEqual(false);
+				expect(storage.isDependentFailed(null, ["version"])).toEqual(true);
+
+				expect(storage.isDependentFailed({compare: {a: 0, b: 5, c: 1}}, ["compare"])).toEqual(false);
+				expect(storage.isDependentFailed({compare: {a: 1, b: 5, c: 1}}, ["compare"])).toEqual(true); // comparator will return false
+
+				storage.setDependenceVal("compare", {a: 1, b: 3, c: 3});
+				expect(storage.isDependentFailed({compare: {a: 1, b: 5, c: 1}}, ["compare"])).toEqual(false);
+			});
+			it('composeDeps', function() {
+				storage.setDependence(userId);
+				expect(storage.composeDeps(["userId"])).toEqual({userId: userId.value});
+				expect(storage.composeDeps(["userId", "version"])).toEqual({userId: userId.value});
+
+				storage.setDependence(version);
+				expect(storage.composeDeps(["userId", "version"])).not.toEqual({userId: userId.value});
+				expect(storage.composeDeps(["userId", "version"])).toEqual({userId: userId.value, version: version.value});
+
+				storage.setDependenceVal("compare", {a: 0, b: 5, c: 1});
+				expect(storage.composeDeps(["userId", "version", "compare"])).not.toEqual({userId: userId.value, version: version.value, compare: compare.value}); // values of "compare" are different
+
+				expect(storage.composeDeps(null)).toBeUndefined();
+				expect(storage.composeDeps([])).toBeUndefined();
+				expect(storage.composeDeps(["a"])).toBeUndefined();
+
+				storage.setDependence(compare);
+				var deps = ["userId", "version", "compare"];
+				var vals = storage.composeDeps(deps);
+
+				expect(storage.isDependentFailed(vals, deps)).toBe(false);
+
+				storage.setDependenceVal("compare", {a: 0, b: 5, c: 20});
+				expect(storage.isDependentFailed(vals, deps)).toBe(true);
+
+				storage.setDependenceVal("compare", {a: 1, b: 3.5, c: 1.5});
+				expect(storage.isDependentFailed(vals, deps)).toBe(false);
 			});
 		});
 	});
