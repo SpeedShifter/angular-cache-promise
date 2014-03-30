@@ -8,7 +8,7 @@ var SpeedShifter;
                     globals[_i] = arguments[_i + 0];
                 }
                 this.storage = {};
-                this.global = globals;
+                this.setGlobals.apply(this, globals);
             }
             DepStorage.prototype.setGlobals = function () {
                 var globals = [];
@@ -17,15 +17,25 @@ var SpeedShifter;
                 }
                 this.global = globals;
             };
-            DepStorage.prototype.addGlobals = function () {
+            DepStorage.prototype.appendGlobals = function () {
                 var globals = [];
                 for (var _i = 0; _i < (arguments.length - 0); _i++) {
                     globals[_i] = arguments[_i + 0];
                 }
                 return this.global = (this.global || []).concat(globals);
             };
+            DepStorage.prototype.prependGlobals = function () {
+                var globals = [];
+                for (var _i = 0; _i < (arguments.length - 0); _i++) {
+                    globals[_i] = arguments[_i + 0];
+                }
+                return this.global = (globals).concat(this.global || []);
+            };
+            DepStorage.prototype.clearGlobals = function () {
+                delete this.global;
+            };
             DepStorage.prototype.getGlobals = function () {
-                return this.global;
+                return this.global || [];
             };
             DepStorage.prototype.getDepend = function (name) {
                 if (this.storage[name])
@@ -76,11 +86,9 @@ var SpeedShifter;
             };
 
             DepStorage.prototype.setDependence = function (dep) {
-                this.storage[dep.name] = {
-                    name: dep.name,
-                    value: dep.value,
-                    comparator: dep.comparator
-                };
+                if (!dep || !dep.name)
+                    return;
+                this.storage[dep.name] = angular.extend({}, dep);
             };
 
             DepStorage.prototype.removeDependence = function (name) {
@@ -93,17 +101,12 @@ var SpeedShifter;
             };
 
             DepStorage.prototype.setDependenceVal = function (name, val) {
-                if (this.storage[name]) {
-                    this.storage[name] = {
-                        name: name,
-                        value: val,
-                        comparator: this.storage[name].comparator
-                    };
-                } else
-                    this.storage[name] = {
-                        name: name,
-                        value: val
-                    };
+                if (!name)
+                    return;
+                this.storage[name] = angular.extend(this.storage[name] || {}, {
+                    name: name,
+                    value: val
+                });
             };
 
             DepStorage.compare = function (dep, val) {

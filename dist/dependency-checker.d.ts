@@ -14,7 +14,9 @@ declare module SpeedShifter.Services {
         private global;
         constructor(...globals: DepStorage[]);
         public setGlobals(...globals: DepStorage[]): void;
-        public addGlobals(...globals: DepStorage[]): DepStorage[];
+        public appendGlobals(...globals: DepStorage[]): DepStorage[];
+        public prependGlobals(...globals: DepStorage[]): DepStorage[];
+        public clearGlobals(): void;
         public getGlobals(): DepStorage[];
         public getDepend(name: string): any;
         public isDependentFailed(vals: {

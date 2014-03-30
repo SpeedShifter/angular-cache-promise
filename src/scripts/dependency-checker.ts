@@ -16,16 +16,22 @@ module SpeedShifter.Services {
 		private storage:{[name:string]: IDepCheckerDepend} = {};
 		private global: DepStorage[];
 		constructor (...globals: DepStorage[]) {
-			this.global = globals;
+			this.setGlobals.apply(this, globals);
 		}
 		setGlobals (...globals: DepStorage[]) {
 			this.global = globals;
 		}
-		addGlobals (...globals: DepStorage[]) {
+		appendGlobals (...globals: DepStorage[]) {
 			return this.global = (this.global || []).concat(globals);
 		}
+		prependGlobals (...globals: DepStorage[]) {
+			return this.global = (globals).concat(this.global || []);
+		}
+		clearGlobals () {
+			delete this.global;
+		}
 		getGlobals () {
-			return this.global;
+			return this.global || [];
 		}
 		getDepend (name: string) {
 			if (this.storage[name])
@@ -81,11 +87,9 @@ module SpeedShifter.Services {
 		}
 
 		setDependence(dep:ILocalStorageDepend) {
-			this.storage[dep.name] = <ILocalStorageDepend> { // clone it
-				name: dep.name,
-				value: dep.value,
-				comparator: dep.comparator
-			};
+			if (!dep || !dep.name)
+				return;
+			this.storage[dep.name] = angular.extend({}, dep);
 		}
 
 		removeDependence(name:string) {
@@ -98,17 +102,12 @@ module SpeedShifter.Services {
 		}
 
 		setDependenceVal(name:string, val:any) {
-			if (this.storage[name]) {
-				this.storage[name] = <ILocalStorageDepend> {
-					name: name,
-					value: val,
-					comparator: this.storage[name].comparator
-				};
-			} else
-				this.storage[name] = <ILocalStorageDepend> {
-					name: name,
-					value: val
-				};
+			if (!name)
+				return;
+			this.storage[name] = angular.extend(this.storage[name] || {}, <ILocalStorageDepend> {
+				name: name,
+				value: val
+			});
 		}
 
 		static compare(dep: IDepCheckerDepend, val) {

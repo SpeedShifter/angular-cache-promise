@@ -117,6 +117,104 @@ describe('dependency-checker ->', function(){
 				expect(storage.isDependentFailed(vals, deps)).toBe(false);
 			});
 		});
+		describe('multiple storages ->', function() {
+			var storage1;
+			beforeEach(function() {
+				storage1 = new SpeedShifter.Services.DepStorage();
+			});
+			it('should inherit dependencies', function() {
+				var storage2 = new SpeedShifter.Services.DepStorage(storage1),
+					storage3 = new SpeedShifter.Services.DepStorage(storage2),
+					storage4 = new SpeedShifter.Services.DepStorage(storage2, storage3);
+
+				storage1.setDependence(userId);
+				expect(storage1.getDepend('userId')).toEqual(userId);
+				expect(storage2.getDepend('userId')).toEqual(userId);
+				expect(storage3.getDepend('userId')).toEqual(userId);
+				expect(storage4.getDepend('userId')).toEqual(userId);
+
+				storage2.setDependence(version);
+				expect(storage1.getDepend('version')).toBeNull();
+				expect(storage2.getDepend('version')).toEqual(version);
+				expect(storage3.getDepend('version')).toEqual(version);
+				expect(storage4.getDepend('version')).toEqual(version);
+
+				storage3.setDependenceVal('version', 434);
+				expect(storage1.getDepend('version')).toBeNull();
+				expect(storage2.getDepend('version')).toEqual(version);
+				expect(storage3.getDepend('version').value).toEqual(434);
+				expect(storage4.getDepend('version').value).toEqual(434);
+			});
+			it('should inherit dependencies in correct order', function() {
+				var storage2 = new SpeedShifter.Services.DepStorage(),
+					storage3 = new SpeedShifter.Services.DepStorage(),
+					storage4 = new SpeedShifter.Services.DepStorage(storage1, storage2, storage3),
+					storage5 = new SpeedShifter.Services.DepStorage(storage2, storage3, storage1),
+					storage6 = new SpeedShifter.Services.DepStorage(storage3, storage1, storage2),
+					storage7 = new SpeedShifter.Services.DepStorage(storage3, storage2, storage1),
+					storage8 = new SpeedShifter.Services.DepStorage(storage1, storage3, storage2);
+
+				storage1.setDependenceVal("1", 1);
+				storage2.setDependenceVal("1", 2);
+				storage3.setDependenceVal("1", 3);
+
+				expect(storage1.getDepend('1').value).toEqual(1);
+				expect(storage2.getDepend('1').value).toEqual(2);
+				expect(storage3.getDepend('1').value).toEqual(3);
+
+				expect(storage4.getDepend('1').value).toEqual(3); // inherited from storage3
+				expect(storage5.getDepend('1').value).toEqual(1);
+				expect(storage6.getDepend('1').value).toEqual(2);
+				expect(storage7.getDepend('1').value).toEqual(1);
+				expect(storage8.getDepend('1').value).toEqual(2);
+
+				storage2.setDependenceVal("2", 12);
+				storage3.setDependenceVal("2", 13);
+
+				expect(storage4.getDepend('2').value).toEqual(13); // inherited from storage3
+				expect(storage5.getDepend('2').value).toEqual(13);
+				expect(storage6.getDepend('2').value).toEqual(12);
+				expect(storage7.getDepend('2').value).toEqual(12);
+				expect(storage8.getDepend('2').value).toEqual(12);
+
+				storage3.setDependenceVal("3", 13);
+
+				expect(storage4.getDepend('3').value).toEqual(13); // inherited from storage3
+				expect(storage5.getDepend('3').value).toEqual(13);
+				expect(storage6.getDepend('3').value).toEqual(13);
+				expect(storage7.getDepend('3').value).toEqual(13);
+				expect(storage8.getDepend('3').value).toEqual(13);
+			});
+
+			it('setGlobals / getGlobals', function() {
+				var storage2 = new SpeedShifter.Services.DepStorage(),
+					storage3 = new SpeedShifter.Services.DepStorage(storage1);
+
+				expect(storage2.getGlobals()).toEqual([]);
+				expect(storage3.getGlobals()).toEqual([storage1]);
+
+				storage2.setGlobals(storage3, storage1);
+				expect(storage2.getGlobals()).toEqual([storage3, storage1]);
+			});
+			it('appendGlobals / prependGlobals / clearGlobals', function() {
+				var storage2 = new SpeedShifter.Services.DepStorage(),
+					storage3 = new SpeedShifter.Services.DepStorage(storage1);
+
+				expect(storage2.getGlobals()).toEqual([]);
+
+				storage2.appendGlobals(storage1);
+				expect(storage2.getGlobals()).toEqual([storage1]);
+
+				storage2.appendGlobals(storage2, storage3);
+				expect(storage2.getGlobals()).toEqual([storage1, storage2, storage3]);
+
+				storage2.prependGlobals(storage3, storage2, storage1);
+				expect(storage2.getGlobals()).toEqual([storage3, storage2, storage1, storage1, storage2, storage3]);
+
+				storage2.clearGlobals();
+				expect(storage2.getGlobals()).toEqual([]);
+			});
+		});
 	});
 
 	/*describe('LocalStorageHelpers ->', function(){
