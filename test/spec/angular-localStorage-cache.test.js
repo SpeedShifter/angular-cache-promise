@@ -518,7 +518,7 @@ xdescribe('angular-localStorage-cache ->', function () {
                 };
 
                 beforeEach(function () {
-                    setTime(0);
+                    setTime(1000);
                 });
 
                 it('value should expire', function () {
@@ -530,7 +530,7 @@ xdescribe('angular-localStorage-cache ->', function () {
 
                     expect(storage.get("val")).toEqual(val);
 
-                    setTime(11 * 1000);
+                    setTime(15 * 1000);
 
                     expect(storage.get("val")).toBeNull();
                 });
@@ -548,7 +548,7 @@ xdescribe('angular-localStorage-cache ->', function () {
 
                     expect(storage.get("val")).toEqual(val);
 
-                    setTime(11 * 1000);
+                    setTime(15 * 1000);
 
                     expect($window.localStorage.length).toBe(4);
 
