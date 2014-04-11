@@ -256,7 +256,7 @@ module SpeedShifter.Services {
 					var propertyName = me.getLocalStorageKey(valName),
 						item = <ILocalStorageItemWrapper>storage.get(propertyName);
 					if (item) {
-						if (depChecker.isItemInvalid(storage.get(propertyName))) {
+						if (depChecker.isItemInvalid(item)) {
 							storage.remove(propertyName);
 							return null;
 						}

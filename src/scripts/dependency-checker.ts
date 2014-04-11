@@ -16,16 +16,22 @@ module SpeedShifter.Services {
 		private storage:{[name:string]: IDepCheckerDepend} = {};
 		private global: DepStorage[];
 		constructor (...globals: DepStorage[]) {
-			this.global = globals;
+			this.setGlobals.apply(this, globals);
 		}
 		setGlobals (...globals: DepStorage[]) {
 			this.global = globals;
 		}
-		addGlobals (...globals: DepStorage[]) {
+		appendGlobals (...globals: DepStorage[]) {
 			return this.global = (this.global || []).concat(globals);
 		}
+		prependGlobals (...globals: DepStorage[]) {
+			return this.global = (globals).concat(this.global || []);
+		}
+		clearGlobals () {
+			delete this.global;
+		}
 		getGlobals () {
-			return this.global;
+			return this.global || [];
 		}
 		getDepend (name: string) {
 			if (this.storage[name])
@@ -43,7 +49,7 @@ module SpeedShifter.Services {
 		}
 
 		isDependentFailed (vals: {[name: string]: any}, deps: string[]) {
-			if (!deps)
+			if (!deps || deps.length == 0)
 				return false;
 			if (!vals)
 				return true;
@@ -64,24 +70,26 @@ module SpeedShifter.Services {
 
 		composeDeps (dep: string[]): {[prop: string]: any} {
 			if (dep && dep.length > 0) {
-				var deps = <{[prop: string]: any}>{},
+				var result = <{[prop: string]: any}>{},
 					i, depend,
 					c = 0;
 				for (i=0; i<dep.length; i++) {
-					depend = this.getDepend(deps[i]);
+					depend = this.getDepend(dep[i]);
 					if (depend) {
-						deps[dep[i]] = depend.value;
+						result[dep[i]] = depend.value;
 						c++;
 					}
 				}
 				if (c>0)
-					return deps;
+					return result;
 			}
-			return null;
+			return undefined;
 		}
 
 		setDependence(dep:ILocalStorageDepend) {
-			this.storage[dep.name] = dep;
+			if (!dep || !dep.name)
+				return;
+			this.storage[dep.name] = angular.extend({}, dep);
 		}
 
 		removeDependence(name:string) {
@@ -94,13 +102,12 @@ module SpeedShifter.Services {
 		}
 
 		setDependenceVal(name:string, val:any) {
-			if (this.storage[name])
-				this.storage[name].value = val;
-			else
-				this.storage[name] = <ILocalStorageDepend> {
-					name: name,
-					value: val
-				};
+			if (!name)
+				return;
+			this.storage[name] = angular.extend(this.storage[name] || {}, <ILocalStorageDepend> {
+				name: name,
+				value: val
+			});
 		}
 
 		static compare(dep: IDepCheckerDepend, val) {
